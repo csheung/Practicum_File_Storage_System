@@ -10,13 +10,14 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include "functions.c"
 
 int main(void)
 {
   int socket_desc, client_sock;
   socklen_t client_size;
   struct sockaddr_in server_addr, client_addr;
-  char server_message[8196], client_message[8196];
+  char server_message[8196], client_message[8196], client_message_copy[8196];
 
   // Clean buffers:
   memset(server_message, '\0', sizeof(server_message));
@@ -80,8 +81,7 @@ int main(void)
       close(socket_desc);
       return -1;
     }
-    // Add null terminator to message
-    client_message[status] = '\0';
+
     if (strcmp(client_message, "exit") == 0)
     {
       // Closing the socket:
@@ -92,8 +92,52 @@ int main(void)
     }
     printf("Msg from client: %s\n", client_message);
 
-    // Respond to client:
-    sprintf(server_message, "Server's response: %s", client_message);
+    // --------- Parse the message ---------
+    char *command;
+    int count = 0;
+    char **args = malloc(3 * sizeof(char *));
+
+    strcpy(client_message_copy, client_message);
+    command = strtok(client_message_copy, " ");
+    while (command != NULL)
+    {
+      count++;
+      args = realloc(args, count * sizeof(char *));
+      args[count - 1] = malloc(strlen(command) + 1);
+      strcpy(args[count - 1], command);
+      command = strtok(NULL, " ");
+    }
+    // print out the commands
+    for (int i = 0; i < count; i++)
+    {
+      printf("%s ", args[i]);
+    }
+    printf("\n");
+
+    //-------------- Switch the command options -------------
+    if (strcmp(args[0], "GET") == 0) // ASK: If the remote file or path is omitted, use the values for the first argument.
+    {
+      char *content = read_file_to_string(args[1]);
+      if (content)
+      {
+        // Respond to client:
+        sprintf(server_message, "SUCCESS SAVE %s %s", args[2], content); // how to deal with content
+        printf("%s ", server_message);
+        // free(content);
+      }
+      else
+      {
+        sprintf(server_message, "ERROR FILE_NOT_FOUND");
+      }
+    }
+    else if (strcmp(args[0], "GET2") == 0)
+    {
+      sprintf(server_message, "ERROR FILE_NOT_FOUND");
+    }
+    else
+    {
+      sprintf(server_message, "ERROR FILE_NOT_FOUND");
+    }
 
     if (send(client_sock, server_message, strlen(server_message), 0) < 0)
     {
