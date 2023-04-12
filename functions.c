@@ -1,5 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdlib.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 
 char *read_file_to_string(const char *filename)
 {
@@ -19,7 +23,7 @@ char *read_file_to_string(const char *filename)
     size = ftell(fp);       // get the size of the file
     fseek(fp, 0, SEEK_SET); // move the file pointer back to the beginning of the file
 
-    str = (char *)malloc(size + 1); // allocate memory for the string
+    str = (char*)malloc(size + 1); // allocate memory for the string
     if (!str)
     {
         printf("Failed to allocate memory.\n");

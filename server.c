@@ -12,13 +12,49 @@
 #include <unistd.h>
 #include "functions.c"
 
+int socket_desc, client_sock;
+socklen_t client_size;
+struct sockaddr_in server_addr, client_addr;
+char server_message[8196], server_message_copy[8196], client_message[8196], client_message_copy[8196];
+
+/**
+ * GET
+*/
+// int get_file_data_from_server_to_client(const char *server_path, const char *client_path)
+// {
+//     if (!server_path || !client_path)
+//     {
+//       printf("NULL server_path or NULL client_path in get_file_data_from_server_to_client function\n");
+//       return 1;
+//     }
+
+//     printf("%s %s\n", server_path, client_path);
+//     FILE *file = fopen(client_path, "wb");
+//     if (file == NULL) {
+//       perror("Error opening file in get_file_data_from_server_to_client function\n");
+//       return 1;
+//     }
+
+//     // Send the server_filepath to the server
+//     send(socket_desc, server_path, strlen(server_path), 0);
+
+//     int bytes_read = recv(socket_desc, server_message, sizeof(server_message), 0);
+//     // 0 indicates "end-of-file"
+//     if (bytes_read == 0) {
+//       perror("Error reading remote file of server path\n");
+//       fclose(file);
+//       return 1;
+//     }
+
+//     fwrite(server_message, 1, bytes_read, file);
+
+//     fclose(file);
+//     return 0;
+// }
+
+
 int main(void)
 {
-  int socket_desc, client_sock;
-  socklen_t client_size;
-  struct sockaddr_in server_addr, client_addr;
-  char server_message[8196], client_message[8196], client_message_copy[8196];
-
   // Clean buffers:
   memset(server_message, '\0', sizeof(server_message));
   memset(client_message, '\0', sizeof(client_message));
@@ -114,29 +150,79 @@ int main(void)
     }
     printf("\n");
 
-    //-------------- Switch the command options -------------
+    // ------------- Switch the command options -------------
     if (strcmp(args[0], "GET") == 0) // ASK: If the remote file or path is omitted, use the values for the first argument.
     {
+      // // variable to save the file data -> strtok() function
+      // char *file_pointer;
+      // int count_arg = 0;
+      // char **returned_args = malloc(3 * sizeof(char *));
+
+      // read file by passing in server path into content
       char *content = read_file_to_string(args[1]);
+      printf("\nGET command -> Content read from Server File: %s\n", content); // fot testing
+
       if (content)
       {
         // Respond to client:
-        sprintf(server_message, "SUCCESS SAVE %s %s", args[2], content); // how to deal with content
-        printf("%s ", server_message);
+        sprintf(server_message, "SUCCESS$SAVE$%s$%s", args[2], content); // how to deal with content
+        printf("%s\n", server_message); // print server message
+
+        /*
+        file_pointer = strtok(server_message, "$");
+        while (file_pointer != NULL)
+        {
+          count_arg++;
+          returned_args = realloc(returned_args, count_arg * sizeof(char *));
+          
+          returned_args[count_arg - 1] = malloc(strlen(file_pointer) + 1);
+          
+          strcpy(returned_args[count_arg - 1], file_pointer);
+          file_pointer = strtok(NULL, "$");
+        }
+
+        // Update the file content of client path
+        char* client_path = args[2];
+        FILE* local_file = fopen(client_path, "w");
+        if (local_file == NULL) {
+          printf("Failed to open the file: %s\n", client_path);
+          return 1;
+        }
+
+        // Write the string using fputs()
+        fputs(content, local_file);
+        // Close the file
+        fclose(local_file);
+
+        printf("String successfully written to the Local Client File: %s\n", client_path); // print ack msg
+        */
         // free(content);
       }
       else
       {
-        sprintf(server_message, "ERROR FILE_NOT_FOUND");
+        sprintf(server_message, "ERROR FILE_NOT_FOUND when doing GET Command.\n");
       }
     }
     else if (strcmp(args[0], "GET2") == 0)
     {
-      sprintf(server_message, "ERROR FILE_NOT_FOUND");
+      sprintf(server_message, "ERROR FILE_NOT_FOUND when doing GET2 Command.\n");
     }
-    else
+    else if (strcmp(args[0], "INFO") == 0)
     {
-      sprintf(server_message, "ERROR FILE_NOT_FOUND");
+      // read file by passing in server path into content
+      char *content = read_file_to_string(args[1]);
+      printf("\nINFO command -> Content read from Server File:\n%s\n", content); // fot testing
+
+      if (content)
+      {
+        // Respond to client
+        sprintf(server_message, "SUCCESS$SAVE$%s$%s", args[2], content); // how to deal with content
+        printf("%s\n", server_message); // print server message
+      } 
+      else 
+      {
+        sprintf(server_message, "ERROR FILE_NOT_FOUND when doing INFO Command.\n");
+      }
     }
 
     if (send(client_sock, server_message, strlen(server_message), 0) < 0)
@@ -144,8 +230,12 @@ int main(void)
       printf("Can't send\n");
       return -1;
     }
+
     // Clean buffers:
     memset(server_message, '\0', sizeof(server_message));
     memset(client_message, '\0', sizeof(client_message));
+
+    // free args memory
+    free(args);
   }
 }

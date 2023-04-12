@@ -13,15 +13,15 @@
 #include <stdlib.h>
 #include "functions.c"
 
-char **args[];
-int argCount = 0;
+int socket_desc;
+struct sockaddr_in server_addr;
+char server_message[8196], server_message_copy[8196], client_message[8196];
+
+// char **args[];
+// int argCount = 0;
 
 int main(void)
 {
-  int socket_desc;
-  struct sockaddr_in server_addr;
-  char server_message[8196], server_message_copy[8196], client_message[8196];
-
   // Clean buffers:
   memset(server_message, '\0', sizeof(server_message));
   memset(client_message, '\0', sizeof(client_message));
@@ -87,19 +87,19 @@ int main(void)
     char **receivedArgs = malloc(4 * sizeof(char *));
 
     strcpy(server_message_copy, server_message);
-    command = strtok(server_message_copy, " ");
+    command = strtok(server_message_copy, "$");
     while (command != NULL)
     {
       count++;
       receivedArgs = realloc(receivedArgs, count * sizeof(char *));
       receivedArgs[count - 1] = malloc(strlen(command) + 1);
       strcpy(receivedArgs[count - 1], command);
-      command = strtok(NULL, " ");
+      command = strtok(NULL, "$");
     }
+
     //-------------- Switch the command options -------------
     if (strcmp(receivedArgs[0], "ERROR") == 0) // ASK: If the remote file or path is omitted, use the values for the first argument.
     {
-
       printf("%s ", server_message); // print to be optimized
     }
     else
