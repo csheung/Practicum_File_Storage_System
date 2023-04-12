@@ -1,10 +1,3 @@
-/*
- * server.c -- TCP Socket Server
- *
- * adapted from:
- *   https://www.educative.io/answers/how-to-implement-tcp-sockets-in-c
- */
-
 #include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -14,47 +7,11 @@
 #include <unistd.h>
 #include "functions.c"
 
-
 int socket_desc, client_sock;
 socklen_t client_size;
 struct sockaddr_in server_addr, client_addr;
 char server_message[8196], server_message_copy[8196], client_message[8196], client_message_copy[8196];
-
-/**
- * GET
-*/
-// int get_file_data_from_server_to_client(const char *server_path, const char *client_path)
-// {
-//     if (!server_path || !client_path)
-//     {
-//       printf("NULL server_path or NULL client_path in get_file_data_from_server_to_client function\n");
-//       return 1;
-//     }
-
-//     printf("%s %s\n", server_path, client_path);
-//     FILE *file = fopen(client_path, "wb");
-//     if (file == NULL) {
-//       perror("Error opening file in get_file_data_from_server_to_client function\n");
-//       return 1;
-//     }
-
-//     // Send the server_filepath to the server
-//     send(socket_desc, server_path, strlen(server_path), 0);
-
-//     int bytes_read = recv(socket_desc, server_message, sizeof(server_message), 0);
-//     // 0 indicates "end-of-file"
-//     if (bytes_read == 0) {
-//       perror("Error reading remote file of server path\n");
-//       fclose(file);
-//       return 1;
-//     }
-
-//     fwrite(server_message, 1, bytes_read, file);
-
-//     fclose(file);
-//     return 0;
-// }
-
+char *content; // pointer to file content
 
 int main(void)
 {
@@ -157,73 +114,46 @@ int main(void)
     if (strcmp(args[0], "GET") == 0) // ASK: If the remote file or path is omitted, use the values for the first argument.
     {
       // read file by passing in server path into content
-      char *content = read_file_to_string(args[1]);
-      // printf("\nGET command -> Content read from Server File: %s\n", content); // fot testing
+      content = read_file_to_string(args[1]);
 
       if (content)
       {
         // Respond to client:
         sprintf(server_message, "SUCCESS$$SAVE$$%s$$%s", args[2], content); // how to deal with content
-        printf("GET command -> %s\n", server_message); // print server message
-
-        /*
-        file_pointer = strtok(server_message, "$");
-        while (file_pointer != NULL)
-        {
-          count_arg++;
-          returned_args = realloc(returned_args, count_arg * sizeof(char *));
-          
-          returned_args[count_arg - 1] = malloc(strlen(file_pointer) + 1);
-          
-          strcpy(returned_args[count_arg - 1], file_pointer);
-          file_pointer = strtok(NULL, "$");
-        }
-
-        // Update the file content of client path
-        char* client_path = args[2];
-        FILE* local_file = fopen(client_path, "w");
-        if (local_file == NULL) {
-          printf("Failed to open the file: %s\n", client_path);
-          return 1;
-        }
-
-        // Write the string using fputs()
-        fputs(content, local_file);
-        // Close the file
-        fclose(local_file);
-
-        printf("String successfully written to the Local Client File: %s\n", client_path); // print ack msg
-        */
-        // free(content);
+        printf("GET command -> %s\n", server_message);                      // print server message
       }
       else
       {
         sprintf(server_message, "ERROR$$FILE_NOT_FOUND when doing GET Command.\n");
       }
+      content = NULL;
     }
     else if (strcmp(args[0], "INFO") == 0) // INFO command
     {
       // read file by passing in server path into content
-      char *content = read_file_to_string(args[1]);
-      printf("\nINFO command -> Content read from Server File:\n%s\n", content); // fot testing
+      content = get_info(args[1]);
 
-      if (content)
+      if (content != NULL)
       {
         // Respond to client
-        sprintf(server_message, "SUCCESS$$SAVE$$%s$$%s", args[2], content); // how to deal with content
-        printf("%s\n", server_message); // print server message
+        sprintf(server_message, "SUCCESS$$INFO$$%s", content); // how to deal with content
+        printf("%s\n", server_message);                        // print server message
       }
-      else 
+      else
       {
         sprintf(server_message, "ERROR$$FILE_NOT_FOUND when doing INFO Command.\n");
       }
+      content = NULL;
     }
     else if (strcmp(args[0], "MD") == 0) // MD command
     {
-      if (create_directory(args[1]) == 0) {
+      if (create_directory(args[1]) == 0)
+      {
         // Respond to client
         sprintf(server_message, "SUCCESS$$MD$$%s", args[1]); // how to deal with content
-      } else {
+      }
+      else
+      {
         sprintf(server_message, "ERROR$$CREATE_FOLDER_FAILURE when doing MD Command.\n");
       }
     }
@@ -242,10 +172,13 @@ int main(void)
     }
     else if (strcmp(args[0], "RM") == 0) // RM command
     {
-      if (remove_file(args[1]) == 0) {
+      if (remove_file(args[1]) == 0)
+      {
         // Respond to client
         sprintf(server_message, "SUCCESS$$RM$$%s", args[1]); // how to deal with content
-      } else {
+      }
+      else
+      {
         sprintf(server_message, "ERROR$$REMOVE_FILE_FAILURE when doing RM Command.\n");
       }
     }
