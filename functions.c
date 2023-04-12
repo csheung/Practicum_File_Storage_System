@@ -56,3 +56,30 @@ int write_string_to_file(const char *filename, const char *str)
 
     return 0;
 }
+
+int create_directory(const char *path) {
+
+    // handle error of building dir already existed
+
+    int status = mkdir(path, 0755); // 0755 sets the read, write, and execute permissions for the owner, and read and execute permissions for the group and others.
+
+    if (status == 0) {
+        printf("Directory created successfully: %s\n", path);
+        return 0;
+    } else {
+        perror("Error creating directory");
+        return 1;
+    }
+}
+
+int remove_file(const char *path) {
+    int result = remove(path);
+
+    if (result == 0) {
+        printf("File removed successfully: %s\n", path);
+        return 0;
+    } else {
+        perror("Error removing file");
+        return 1;
+    }
+}

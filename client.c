@@ -15,7 +15,7 @@
 
 int socket_desc;
 struct sockaddr_in server_addr;
-char server_message[8196], server_message_copy[8196], client_message[8196];
+char server_message[8196], server_message_copy[8196], client_message[8196], client_message_copy[8196];
 
 // char **args[];
 // int argCount = 0;
@@ -50,7 +50,7 @@ int main(void)
   }
   printf("Connected with server successfully\n");
 
-  // while command is not exit, keep running the client
+  // while receivedCommand is not exit, keep running the client
   while (1)
   {
     // Get input from the user:
@@ -62,6 +62,63 @@ int main(void)
       // Close the socket:
       close(socket_desc);
       return 0;
+    }
+
+    // --------- Parse client input ---------
+    char *command;
+    int count = 0;
+    char **args = malloc(3 * sizeof(char *));
+
+    strcpy(client_message_copy, client_message);
+    command = strtok(client_message_copy, " ");
+    while (command != NULL)
+    {
+      count++;
+      args = realloc(args, count * sizeof(char *));
+      args[count - 1] = malloc(strlen(command) + 1);
+      strcpy(args[count - 1], command);
+      command = strtok(NULL, " ");
+    }
+    // print out the commands
+    for (int i = 0; i < count; i++)
+    {
+      printf("%s ", args[i]);
+    }
+    printf("\n");
+
+    // ------------- Switch command options of client input -------------
+    if (strcmp(args[0], "PUT") == 0)
+    {
+      // read file by passing in client local path into content
+      char *content = read_file_to_string(args[1]);
+      // printf("\nPUT command -> Content read from Client File: %s\n", content); // fot testing
+      
+      if (content)
+      {
+        // Respond to client:
+        sprintf(client_message, "PUT$$%s$$%s", args[2], content); // how to deal with content
+        printf("PUT command data -> %s\n", client_message); // print server message
+      }
+    } 
+    else if (strcmp(args[0], "GET") == 0)
+    {
+      sprintf(client_message, "GET$$%s$$%s", args[1], args[2]);
+    }
+    else if (strcmp(args[0], "MD") == 0)
+    {
+      sprintf(client_message, "MD$$%s", args[1]);
+    }
+    else if (strcmp(args[0], "INFO") == 0)
+    {
+      sprintf(client_message, "INFO$$%s", args[1]);
+    }
+    else if (strcmp(args[0], "RM") == 0)
+    {
+      sprintf(client_message, "RM$$%s", args[1]);
+    }
+    else
+    {
+      // error message
     }
 
     // Send the message to server:
@@ -82,22 +139,22 @@ int main(void)
     printf("Server's response: %s\n", server_message);
 
     // --------- Parse the message ---------
-    char *command;
-    int count = 0;
+    char *receivedCommand;
+    int recvCount = 0;
     char **receivedArgs = malloc(4 * sizeof(char *));
 
     strcpy(server_message_copy, server_message);
-    command = strtok(server_message_copy, "$");
-    while (command != NULL)
+    receivedCommand = strtok(server_message_copy, "$$");
+    while (receivedCommand != NULL)
     {
-      count++;
-      receivedArgs = realloc(receivedArgs, count * sizeof(char *));
-      receivedArgs[count - 1] = malloc(strlen(command) + 1);
-      strcpy(receivedArgs[count - 1], command);
-      command = strtok(NULL, "$");
+      recvCount++;
+      receivedArgs = realloc(receivedArgs, recvCount * sizeof(char *));
+      receivedArgs[recvCount - 1] = malloc(strlen(receivedCommand) + 1);
+      strcpy(receivedArgs[recvCount - 1], receivedCommand);
+      receivedCommand = strtok(NULL, "$$");
     }
 
-    //-------------- Switch the command options -------------
+    //-------------- Switch the receivedCommand options -------------
     if (strcmp(receivedArgs[0], "ERROR") == 0) // ASK: If the remote file or path is omitted, use the values for the first argument.
     {
       printf("%s ", server_message); // print to be optimized
@@ -110,6 +167,14 @@ int main(void)
         {
           printf("Success: Received the content from server and wrote to file %s.\n", receivedArgs[3]);
         }
+      }
+      else if (strcmp(receivedArgs[1], "MD") == 0)
+      {
+        printf("Success: Created Directory to server %s.\n", receivedArgs[2]);
+      }
+      else if (strcmp(receivedArgs[1], "MD") == 0)
+      {
+        printf("Success: Put file to server %s.\n", receivedArgs[2]);
       }
     }
   }

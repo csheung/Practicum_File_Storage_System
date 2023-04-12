@@ -8,9 +8,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <arpa/inet.h>
 #include <unistd.h>
 #include "functions.c"
+
 
 int socket_desc, client_sock;
 socklen_t client_size;
@@ -134,39 +137,34 @@ int main(void)
     char **args = malloc(3 * sizeof(char *));
 
     strcpy(client_message_copy, client_message);
-    command = strtok(client_message_copy, " ");
+    command = strtok(client_message_copy, "$$");
     while (command != NULL)
     {
       count++;
       args = realloc(args, count * sizeof(char *));
       args[count - 1] = malloc(strlen(command) + 1);
       strcpy(args[count - 1], command);
-      command = strtok(NULL, " ");
+      command = strtok(NULL, "$$");
     }
     // print out the commands
-    for (int i = 0; i < count; i++)
-    {
-      printf("%s ", args[i]);
-    }
-    printf("\n");
+    // for (int i = 0; i < count; i++)
+    // {
+    //   printf("%s ", args[i]);
+    // }
+    // printf("\n");
 
-    // ------------- Switch the command options -------------
+    // ------------- Switch command options -------------
     if (strcmp(args[0], "GET") == 0) // ASK: If the remote file or path is omitted, use the values for the first argument.
     {
-      // // variable to save the file data -> strtok() function
-      // char *file_pointer;
-      // int count_arg = 0;
-      // char **returned_args = malloc(3 * sizeof(char *));
-
       // read file by passing in server path into content
       char *content = read_file_to_string(args[1]);
-      printf("\nGET command -> Content read from Server File: %s\n", content); // fot testing
+      // printf("\nGET command -> Content read from Server File: %s\n", content); // fot testing
 
       if (content)
       {
         // Respond to client:
-        sprintf(server_message, "SUCCESS$SAVE$%s$%s", args[2], content); // how to deal with content
-        printf("%s\n", server_message); // print server message
+        sprintf(server_message, "SUCCESS$$SAVE$$%s$$%s", args[2], content); // how to deal with content
+        printf("GET command -> %s\n", server_message); // print server message
 
         /*
         file_pointer = strtok(server_message, "$");
@@ -200,14 +198,10 @@ int main(void)
       }
       else
       {
-        sprintf(server_message, "ERROR FILE_NOT_FOUND when doing GET Command.\n");
+        sprintf(server_message, "ERROR$$FILE_NOT_FOUND when doing GET Command.\n");
       }
     }
-    else if (strcmp(args[0], "GET2") == 0)
-    {
-      sprintf(server_message, "ERROR FILE_NOT_FOUND when doing GET2 Command.\n");
-    }
-    else if (strcmp(args[0], "INFO") == 0)
+    else if (strcmp(args[0], "INFO") == 0) // INFO command
     {
       // read file by passing in server path into content
       char *content = read_file_to_string(args[1]);
@@ -216,12 +210,43 @@ int main(void)
       if (content)
       {
         // Respond to client
-        sprintf(server_message, "SUCCESS$SAVE$%s$%s", args[2], content); // how to deal with content
+        sprintf(server_message, "SUCCESS$$SAVE$$%s$$%s", args[2], content); // how to deal with content
         printf("%s\n", server_message); // print server message
-      } 
+      }
       else 
       {
-        sprintf(server_message, "ERROR FILE_NOT_FOUND when doing INFO Command.\n");
+        sprintf(server_message, "ERROR$$FILE_NOT_FOUND when doing INFO Command.\n");
+      }
+    }
+    else if (strcmp(args[0], "MD") == 0) // MD command
+    {
+      if (create_directory(args[1]) == 0) {
+        // Respond to client
+        sprintf(server_message, "SUCCESS$$MD$$%s", args[1]); // how to deal with content
+      } else {
+        sprintf(server_message, "ERROR$$CREATE_FOLDER_FAILURE when doing MD Command.\n");
+      }
+    }
+    else if (strcmp(args[0], "PUT") == 0) // PUT command
+    {
+      if (write_string_to_file(args[1], args[2]) == 0)
+      {
+        printf("Success: Received the content from client and wrote to file %s.\n", args[1]);
+        sprintf(server_message, "SUCCESS$$PUT$$%s\n", args[1]);
+      }
+      else
+      {
+        sprintf(server_message, "ERROR$$PUT_FILE_FAILURE when doing PUT Command.\n");
+        perror("Error writing file\n");
+      }
+    }
+    else if (strcmp(args[0], "RM") == 0) // RM command
+    {
+      if (remove_file(args[1]) == 0) {
+        // Respond to client
+        sprintf(server_message, "SUCCESS$$RM$$%s", args[1]); // how to deal with content
+      } else {
+        sprintf(server_message, "ERROR$$REMOVE_FILE_FAILURE when doing RM Command.\n");
       }
     }
 

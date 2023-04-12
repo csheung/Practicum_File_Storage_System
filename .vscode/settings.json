@@ -3,6 +3,7 @@
     ".json": "JSON",
     ".md": "markdown",
     "__locale": "c",
-    "cstring": "c"
+    "cstring": "c",
+    "socket.h": "c"
   }
 }
