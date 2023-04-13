@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -13,7 +12,7 @@ char *read_file_to_string(const char *filename)
     char *str;
     long size;
 
-    fp = fopen(filename, "rb"); // open the file in binary mode
+    fp = fopen(filename, "r"); // open the file in binary mode
     if (!fp)
     {
         printf("Failed to open the file.\n");
