@@ -1,3 +1,13 @@
+/*
+ * File Name: functions.c
+ * Assignment Title: Practicum II - File Storage System
+ *
+ * CS5600 Computer Systems / Northeastern University
+ * Spring 2023 / Apr 11, 2023
+ * Created by Chun Sheung Ng (Derrick) & Zhenyu Wang (Sean)
+ *
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
