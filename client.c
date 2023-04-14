@@ -1,14 +1,4 @@
 /*
- * File Name: client.c
- * Assignment Title: Practicum II - File Storage System
- *
- * CS5600 Computer Systems / Northeastern University
- * Spring 2023 / Apr 11, 2023
- * Created by Chun Sheung Ng (Derrick) & Zhenyu Wang (Sean)
- *
- */
-
-/*
  * client.c -- TCP Socket Client
  *
  * adapted from:
@@ -60,75 +50,80 @@ int main(void)
   }
   printf("Connected with server successfully\n");
 
+  // Receive the server's welcome message:
+  if (recv(socket_desc, server_message, sizeof(server_message), 0) < 0)
+  {
+    printf("Error while receiving server's msg\n");
+    // Closing the socket:
+    close(socket_desc);
+    return -1;
+  }
+  printf("Server's response: %s\n", server_message);
+
   // while receivedCommand is not exit, keep running the client
   while (1)
   {
+    memset(client_message, '\0', sizeof(client_message));
+    memset(server_message, '\0', sizeof(server_message));
+    memset(server_message_copy, '\0', sizeof(server_message_copy));
+    memset(client_message_copy, '\0', sizeof(client_message_copy));
     // Get input from the user:
-    printf("Enter message: ");
-    gets(client_message);
-
-    if (strcmp(client_message, "exit") == 0)
-    {
-      // Close the socket:
-      close(socket_desc);
-      return 0;
-    }
-
-    // --------- Parse client input ---------
     char *command;
     int count = 0;
     char **args = malloc(3 * sizeof(char *));
+    printf("Enter message: ");
+    gets(client_message);
 
-    strcpy(client_message_copy, client_message);
-    command = strtok(client_message_copy, " ");
-    while (command != NULL)
+    if (strcmp(client_message, "esc") == 0)
     {
-      count++;
-      args = realloc(args, count * sizeof(char *));
-      args[count - 1] = malloc(strlen(command) + 1);
-      strcpy(args[count - 1], command);
-      command = strtok(NULL, " ");
-    }
-    // print out the commands
-    for (int i = 0; i < count; i++)
-    {
-      printf("%s ", args[i]);
-    }
-    printf("\n");
-
-    // ------------- Switch command options of client input -------------
-    if (strcmp(args[0], "PUT") == 0)
-    {
-      // read file by passing in client local path into content
-      char *content = read_file_to_string(args[1]);
-      // printf("\nPUT command -> Content read from Client File: %s\n", content); // fot testing
-      
-      if (content)
-      {
-        // Respond to client:
-        sprintf(client_message, "PUT$$%s$$%s", args[2], content); // how to deal with content
-        printf("PUT command data -> %s\n", client_message); // print server message
-      }
-    } 
-    else if (strcmp(args[0], "GET") == 0)
-    {
-      sprintf(client_message, "GET$$%s$$%s", args[1], args[2]);
-    }
-    else if (strcmp(args[0], "MD") == 0)
-    {
-      sprintf(client_message, "MD$$%s", args[1]);
-    }
-    else if (strcmp(args[0], "INFO") == 0)
-    {
-      sprintf(client_message, "INFO$$%s", args[1]);
-    }
-    else if (strcmp(args[0], "RM") == 0)
-    {
-      sprintf(client_message, "RM$$%s", args[1]);
+      sprintf(client_message, "esc");
     }
     else
-    {
-      // error message
+    { // --------- Parse client input ---------
+      strcpy(client_message_copy, client_message);
+      command = strtok(client_message_copy, " ");
+      while (command != NULL)
+      {
+        count++;
+        args = realloc(args, count * sizeof(char *));
+        args[count - 1] = malloc(strlen(command) + 1);
+        strcpy(args[count - 1], command);
+        command = strtok(NULL, " ");
+      }
+      // ------------- Switch command options of client input -------------
+      if (strcmp(args[0], "PUT") == 0)
+      {
+        // read file by passing in client local path into content
+        char *content = read_file_to_string(args[1]);
+        // printf("\nPUT command -> Content read from Client File: %s\n", content); // fot testing
+
+        if (content)
+        {
+          // Respond to client:
+          sprintf(client_message, "PUT$$%s$$%s", args[2], content); // how to deal with content
+          printf("PUT command data -> %s\n", client_message);       // print server message
+        }
+      }
+      else if (strcmp(args[0], "GET") == 0)
+      {
+        sprintf(client_message, "GET$$%s$$%s", args[1], args[2]);
+      }
+      else if (strcmp(args[0], "MD") == 0)
+      {
+        sprintf(client_message, "MD$$%s", args[1]);
+      }
+      else if (strcmp(args[0], "INFO") == 0)
+      {
+        sprintf(client_message, "INFO$$%s", args[1]);
+      }
+      else if (strcmp(args[0], "RM") == 0)
+      {
+        sprintf(client_message, "RM$$%s", args[1]);
+      }
+      else
+      {
+        // error message
+      }
     }
 
     // Send the message to server:
@@ -148,7 +143,7 @@ int main(void)
     }
     printf("Server's response: %s\n", server_message);
 
-    // --------- Parse the message ---------
+    // --------- Parse the SERVER message ---------
     char *receivedCommand;
     int recvCount = 0;
     char **receivedArgs = malloc(4 * sizeof(char *));
@@ -168,6 +163,13 @@ int main(void)
     if (strcmp(receivedArgs[0], "ERROR") == 0) // ASK: If the remote file or path is omitted, use the values for the first argument.
     {
       printf("%s ", server_message); // print to be optimized
+    }
+    else if (strcmp(receivedArgs[0], "EXIT") == 0)
+    {
+      printf("%s \n", receivedArgs[1]); // print server Goobye
+      // Closing the socket:
+      close(socket_desc);
+      return 0;
     }
     else
     {

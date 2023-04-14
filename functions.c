@@ -14,6 +14,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <libgen.h>
 
 char *read_file_to_string(const char *filename)
 {
@@ -52,7 +53,20 @@ char *read_file_to_string(const char *filename)
 int write_string_to_file(const char *filename, const char *str)
 {
     FILE *fp;
+    char filename_copy[256];
+    char *directory = dirname((char *)filename);
 
+    char *dir = strtok(directory, "/");
+    char curr_dir[256] = "";
+    while (dir != NULL)
+    {
+        strcat(curr_dir, dir);
+        mkdir(curr_dir, 0777);
+        strcat(curr_dir, "/");
+        dir = strtok(NULL, "/");
+    }
+    // printf("file name %s \n", filename);
+    // printf("file name copy %s \n", filename_copy);
     fp = fopen(filename, "w"); // open the file in write mode
     if (!fp)
     {
