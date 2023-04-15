@@ -275,9 +275,100 @@ char *read_from_USBs(const char *file_path, usb_t *usb1, usb_t *usb2, char uniqu
     }
     else
     {
-        perror("No usb connected.");
+        perror("read_from_USBs -> No USB connected");
     }
     return file_content;
+}
+
+/**
+ * 
+*/
+char *get_info_from_USB_file(const char *file_path, usb_t *usb1, usb_t *usb2, char unique_files[MAX_FILE_COUNT][MAX_FILE_PATH_LENGTH], int *unique_files_count)
+{
+    check_USB_connections(usb1, usb2);
+    char *file_info = NULL;
+    if (usb1_exist == 0 && usb2_exist == 0)
+    {
+        synchronize(usb1, usb2, unique_files, unique_files_count);
+    }
+
+    if (usb1_exist == 0)
+    {
+        // need identifiers if using by another thread
+
+        char usb1_file_path[MAX_FILE_PATH_LENGTH];
+        sprintf(usb1_file_path, "%s%s", USB1_MOUNT_PATH, file_path);
+        file_info = get_info(usb1_file_path);
+    }
+    else if (usb2_exist == 0)
+    {
+        // need identifiers if using by another thread
+
+        char usb2_file_path[MAX_FILE_PATH_LENGTH];
+        sprintf(usb2_file_path, "%s%s", USB2_MOUNT_PATH, file_path);
+        file_info = get_info(usb2_file_path);
+    }
+    else
+    {
+        perror("get_info_from_USB_file -> No USB connected");
+    }
+    return file_info;
+}
+
+/**
+ * Create identical directories for USB devices
+*/
+int create_dir_in_USBs(const char *file_path, usb_t *usb1, usb_t *usb2, char unique_files[MAX_FILE_COUNT][MAX_FILE_PATH_LENGTH], int *unique_files_count)
+{
+    check_USB_connections(usb1, usb2);
+    char *file_info = NULL;
+    if (usb1_exist == 0 && usb2_exist == 0)
+    {
+        synchronize(usb1, usb2, unique_files, unique_files_count);
+    }
+
+    int usb1_result, usb2_result; //identifiers
+    if (usb1_exist == 0)
+    {
+        // need identifiers if using by another thread
+
+        char usb1_file_path[MAX_FILE_PATH_LENGTH];
+        sprintf(usb1_file_path, "%s%s", USB1_MOUNT_PATH, file_path);
+        usb1_result = create_directory(usb1_file_path);
+    }
+    
+    if (usb2_exist == 0)
+    {
+        // need identifiers if using by another thread
+
+        char usb2_file_path[MAX_FILE_PATH_LENGTH];
+        sprintf(usb2_file_path, "%s%s", USB2_MOUNT_PATH, file_path);
+        usb2_result = create_directory(usb2_file_path);
+    }
+    
+    // prompt error message to identify the location of failed connection
+    if (usb1_exist != 0 && usb2_exist != 0)
+    {
+        perror("create_dir_in_USBs -> No USB connected");
+        return 1;
+    }
+    else if (usb1_exist != 0)
+    {
+        perror("create_dir_in_USBs -> usb1 failed connection");
+        return 1;
+    }
+    else if (usb2_exist != 0)
+    {
+        perror("create_dir_in_USBs -> usb2 failed connection");
+        return 1;
+    }
+
+    if (usb1_result != 0 || usb2_result != 0)
+    {
+        perror("create_dir_in_USBs -> failed dir creation");
+        return 1;
+    }
+    return 0;
 }
 
 /*

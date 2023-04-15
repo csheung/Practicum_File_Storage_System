@@ -201,14 +201,18 @@ int main(void)
       {
         if (write_string_to_file(receivedArgs[2], receivedArgs[3]) == 0)
         {
-          printf("Success: Received the content from server and wrote to file %s.\n", receivedArgs[3]);
+          printf("Success: Received content from server and wrote to file %s.\n", receivedArgs[3]);
         }
       }
       else if (strcmp(receivedArgs[1], "MD") == 0)
       {
         printf("Success: Created Directory to server %s.\n", receivedArgs[2]);
       }
-      else if (strcmp(receivedArgs[1], "MD") == 0)
+      else if (strcmp(receivedArgs[1], "INFO") == 0)
+      {
+        printf("Success: Captured file information from USB:\n%s\n", receivedArgs[2]);
+      }
+      else if (strcmp(receivedArgs[1], "PUT") == 0)
       {
         printf("Success: Put file to server %s.\n", receivedArgs[2]);
       }
