@@ -16,17 +16,31 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <pthread.h>
-#include "functions.c"
+#include "server_file_manager.h"
 
 int socket_desc, client_sock;
 socklen_t client_size;
 struct sockaddr_in server_addr, client_addr;
+
+char unique_files[MAX_FILE_COUNT][MAX_FILE_PATH_LENGTH];
+int unique_files_count;
+// Construct two usb_t for usb1 and usb2
+usb_t usb1;
+usb_t usb2;
 
 void *connection_handler(void *);
 void process_request(char client_message_copy[8196], char client_message[8196], char server_message[8196]);
 
 int main(void)
 {
+  usb1 = create_USB_struct(USB1_MOUNT_PATH);
+  usb2 = create_USB_struct(USB2_MOUNT_PATH);
+
+  // memset unique files
+  for (int i = 0; i < MAX_FILE_COUNT; i++)
+  {
+      memset(unique_files[i], '\0', MAX_FILE_PATH_LENGTH);
+  }
 
   // Create socket:
   socket_desc = socket(AF_INET, SOCK_STREAM, 0);
@@ -105,14 +119,12 @@ void *connection_handler(void *client_sock)
 
   while ((read_size = recv(sock, client_message, sizeof(client_message), 0)) > 0)
   {
-    // Clear buffers:
-    memset(client_message, '\0', sizeof(client_message));
-    memset(client_message_copy, '\0', sizeof(client_message_copy));
-    memset(server_message, '\0', sizeof(server_message));
+    printf("Right After recv(): %s\n", client_message);
 
     // Check if the client wants to exit:
     if (strcmp(client_message, "esc") == 0)
     {
+      memset(server_message, '\0', sizeof(server_message));
       printf("Client %d requested to disconnect!\n", sock);
       sprintf(server_message, "EXIT$$Goodbye!\n");
       send(sock, server_message, strlen(server_message), 0);
@@ -126,6 +138,11 @@ void *connection_handler(void *client_sock)
     // Send the result back to the client:
     // write(sock, server_message, strlen(server_message));
     send(sock, server_message, strlen(server_message), 0);
+
+    // Clear buffers:
+    memset(client_message, '\0', sizeof(client_message));
+    memset(client_message_copy, '\0', sizeof(client_message_copy));
+    memset(server_message, '\0', sizeof(server_message));
   }
 
   if (read_size == 0)
@@ -141,6 +158,7 @@ void *connection_handler(void *client_sock)
     // close(socket_desc);
     // return -1;
   }
+  return NULL;
 }
 
 void process_request(char client_message_copy[8196], char client_message[8196], char server_message[8196])
@@ -150,7 +168,6 @@ void process_request(char client_message_copy[8196], char client_message[8196], 
   char *command;
   int count = 0;
   char **args = malloc(3 * sizeof(char *));
-
   strcpy(client_message_copy, client_message);
   command = strtok(client_message_copy, "$$");
   while (command != NULL)
@@ -172,7 +189,7 @@ void process_request(char client_message_copy[8196], char client_message[8196], 
   if (strcmp(args[0], "GET") == 0) // ASK: If the remote file or path is omitted, use the values for the first argument.
   {
     // read file by passing in server path into content
-    content = read_file_to_string(args[1]);
+    content = read_from_USBs(args[1], &usb1, &usb2, unique_files, &unique_files_count);
 
     if (content)
     {

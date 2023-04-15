@@ -22,6 +22,11 @@ char server_message[8196], server_message_copy[8196], client_message[8196], clie
 
 int main(void)
 {
+  // Get input from the user:
+  char *command;
+  int count = 0;
+  char **args;
+
   // Clean buffers:
   memset(server_message, '\0', sizeof(server_message));
   memset(client_message, '\0', sizeof(client_message));
@@ -61,16 +66,17 @@ int main(void)
   printf("Server's response: %s\n", server_message);
 
   // while receivedCommand is not exit, keep running the client
+
   while (1)
   {
+    count = 0;
+    args = malloc(3 * sizeof(char *));
+
     memset(client_message, '\0', sizeof(client_message));
     memset(server_message, '\0', sizeof(server_message));
     memset(server_message_copy, '\0', sizeof(server_message_copy));
     memset(client_message_copy, '\0', sizeof(client_message_copy));
-    // Get input from the user:
-    char *command;
-    int count = 0;
-    char **args = malloc(3 * sizeof(char *));
+
     printf("Enter message: ");
     gets(client_message);
 
@@ -90,6 +96,14 @@ int main(void)
         strcpy(args[count - 1], command);
         command = strtok(NULL, " ");
       }
+
+      if (count <= 1)
+      {
+        printf("Not enough arguments. Please enter necessary arguments.\n");
+        free(args);
+        continue;
+      }
+
       // ------------- Switch command options of client input -------------
       if (strcmp(args[0], "PUT") == 0)
       {
@@ -106,7 +120,15 @@ int main(void)
       }
       else if (strcmp(args[0], "GET") == 0)
       {
-        sprintf(client_message, "GET$$%s$$%s", args[1], args[2]);
+        printf("GET before strcmp\n");
+        if (count == 2)
+        {
+          sprintf(client_message, "GET$$%s$$temp.txt", args[1]);
+        }
+        else if (count == 3)
+        {
+          sprintf(client_message, "GET$$%s$$%s", args[1], args[2]);
+        }
       }
       else if (strcmp(args[0], "MD") == 0)
       {
@@ -122,7 +144,9 @@ int main(void)
       }
       else
       {
-        // error message
+        printf("Invalid command. Please enter a valid one.\n");
+        free(args);
+        continue;
       }
     }
 
@@ -162,11 +186,11 @@ int main(void)
     //-------------- Switch the receivedCommand options -------------
     if (strcmp(receivedArgs[0], "ERROR") == 0) // ASK: If the remote file or path is omitted, use the values for the first argument.
     {
-      printf("%s ", server_message); // print to be optimized
+      printf("%s", server_message); // print to be optimized
     }
     else if (strcmp(receivedArgs[0], "EXIT") == 0)
     {
-      printf("%s \n", receivedArgs[1]); // print server Goobye
+      printf("%s\n", receivedArgs[1]); // print server Goobye
       // Closing the socket:
       close(socket_desc);
       return 0;

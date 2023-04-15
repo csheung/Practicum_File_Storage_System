@@ -53,7 +53,7 @@ char *read_file_to_string(const char *filename)
 int write_string_to_file(const char *filename, const char *str)
 {
     FILE *fp;
-    char filename_copy[256];
+    // char filename_copy[256];
     char *directory = dirname((char *)filename);
 
     char *dir = strtok(directory, "/");
@@ -81,12 +81,41 @@ int write_string_to_file(const char *filename, const char *str)
     return 0;
 }
 
+/**
+ * helper function to check if directory exists
+*/
+int path_exists(const char *path) {
+    if (access(path, F_OK) == 0) {
+        // Path exists
+        return 1;
+    } else {
+        // Path doesn't exist
+        return 0;
+    }
+}
+
 int create_directory(const char *path)
 {
+    // handle error for dir already existed
+    if (path_exists(path)) 
+    { 
+        printf("Path already exists: %s\n", path);
+        return 1;
+    }
 
-    // handle error of building dir already existed
-
-    int status = mkdir(path, 0755); // 0755 sets the read, write, and execute permissions for the owner, and read and execute permissions for the group and others.
+    // strtok to handle multiple directories
+    char *dir = strtok((char*)path, "/");
+    printf("Inside Creating directory: %s\n", dir);
+    int status;
+    char curr_dir[256] = "";
+    while (dir != NULL)
+    {
+        strcat(curr_dir, dir);
+        // 0777 sets the read, write, and execute permissions for the owner, and read and execute permissions for the group and others.
+        status = mkdir(curr_dir, 0777);
+        strcat(curr_dir, "/");
+        dir = strtok(NULL, "/");
+    }
 
     if (status == 0)
     {
@@ -96,6 +125,7 @@ int create_directory(const char *path)
     else
     {
         perror("Error creating directory");
+        printf("Out-of-loop Error creating directory %s\n", curr_dir);
         return 1;
     }
 }
