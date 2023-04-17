@@ -35,12 +35,14 @@ void *connection_handler(void *);
 void process_request(char client_message_copy[8196], char client_message[8196], char server_message[8196]);
 void synchronize_();
 void *background_thread(void *arg);
+pthread_t bg_thread;
 
 int main(void)
 {
   usb1 = create_USB_struct(USB1_MOUNT_PATH);
   usb2 = create_USB_struct(USB2_MOUNT_PATH);
-  pthread_t bg_thread;
+  client_size = sizeof(client_addr);
+  int opt = 1;
 
   // memset unique files
   for (int i = 0; i < MAX_FILE_COUNT; i++)
@@ -48,15 +50,22 @@ int main(void)
     memset(unique_files[i], '\0', MAX_FILE_PATH_LENGTH);
   }
 
-  // Create socket:
+  // Create socket file descriptor:
   socket_desc = socket(AF_INET, SOCK_STREAM, 0);
 
   if (socket_desc < 0)
   {
     printf("Error while creating socket\n");
-    return -1;
+    exit(EXIT_FAILURE);
   }
   printf("Socket created successfully\n");
+
+  // Set socket options
+  if (setsockopt(socket_desc, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)))
+  {
+    perror("setsockopt failed");
+    exit(EXIT_FAILURE);
+  }
 
   // Set port and IP:
   server_addr.sin_family = AF_INET;
@@ -71,11 +80,14 @@ int main(void)
   }
   printf("Done with binding\n");
 
-  // Listen:
-  listen(socket_desc, 3);
+  // Start listening for incoming connections
+  if (listen(socket_desc, 3) < 0)
+  {
+    perror("listen failed");
+    exit(EXIT_FAILURE);
+  }
 
   printf("Waiting for incoming connections...\n");
-  client_size = sizeof(client_addr);
 
   // Synchonize connected USBs
   if (pthread_create(&bg_thread, NULL, background_thread, NULL) != 0)

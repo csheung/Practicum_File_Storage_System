@@ -13,6 +13,8 @@
 #include <stdlib.h>
 #include "functions.c"
 
+#define SERVER_IP "127.0.0.1" // You can obtain the IP address of the server by running the ifconfig or ip addr command on the server's terminal.
+
 int socket_desc;
 struct sockaddr_in server_addr;
 char server_message[8196], server_message_copy[8196], client_message[8196], client_message_copy[8196];
@@ -31,7 +33,7 @@ int main(void)
   memset(server_message, '\0', sizeof(server_message));
   memset(client_message, '\0', sizeof(client_message));
 
-  // Create socket:
+  // Create socket file descriptor:
   socket_desc = socket(AF_INET, SOCK_STREAM, 0);
 
   if (socket_desc < 0)
@@ -45,7 +47,7 @@ int main(void)
   // Set port and IP the same as server-side:
   server_addr.sin_family = AF_INET;
   server_addr.sin_port = htons(2000);
-  server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+  server_addr.sin_addr.s_addr = inet_addr(SERVER_IP);
 
   // Send connection request to server:
   if (connect(socket_desc, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
@@ -78,7 +80,7 @@ int main(void)
     memset(client_message_copy, '\0', sizeof(client_message_copy));
 
     printf("Enter message: ");
-    gets(client_message);
+    fgets(client_message, sizeof(client_message), stdin);
 
     if (strcmp(client_message, "esc") == 0)
     {
