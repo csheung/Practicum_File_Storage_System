@@ -63,7 +63,7 @@ int main(void)
     close(socket_desc);
     return -1;
   }
-  printf("Server's response: %s\n", server_message);
+  printf("Server's response: %s", server_message);
 
   // while receivedCommand is not exit, keep running the client
 
@@ -113,9 +113,12 @@ int main(void)
 
         if (content)
         {
-          // Respond to client:
-          sprintf(client_message, "PUT$$%s$$%s", args[2], content); // how to deal with content
-          printf("PUT command data -> %s\n", client_message);       // print server message
+          sprintf(client_message, "PUT$$%s$$%s", args[2], content);
+        }
+        else
+        {
+          printf("Local file does not exist, please enter a valid command.\n");
+          continue;
         }
       }
       else if (strcmp(args[0], "GET") == 0)
@@ -186,7 +189,7 @@ int main(void)
     //-------------- Switch the receivedCommand options -------------
     if (strcmp(receivedArgs[0], "ERROR") == 0) // ASK: If the remote file or path is omitted, use the values for the first argument.
     {
-      printf("%s", server_message); // print to be optimized
+      printf("Command error, please enter a new message.\n"); // print to be optimized
     }
     else if (strcmp(receivedArgs[0], "EXIT") == 0)
     {
@@ -199,7 +202,7 @@ int main(void)
     {
       if (strcmp(receivedArgs[1], "SAVE") == 0)
       {
-        if (write_string_to_file(receivedArgs[2], receivedArgs[3]) == 0)
+        if (write_string_to_file(NULL, receivedArgs[2], receivedArgs[3]) == 0)
         {
           printf("Success: Received content from server and wrote to file %s.\n", receivedArgs[3]);
         }
