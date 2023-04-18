@@ -206,13 +206,13 @@ void process_request(char client_message_copy[8196], char client_message[8196], 
   else if (strcmp(args[0], "INFO") == 0) // INFO command
   {
     // read file by passing in server path into content
-    content = get_info(args[1]);
+    content = get_info_from_USB_file(args[1], &usb1, &usb2, unique_files, &unique_files_count);
 
     if (content != NULL)
     {
       // Respond to client
       sprintf(server_message, "SUCCESS$$INFO$$%s", content); // how to deal with content
-      printf("%s\n", server_message);                        // print server message
+      printf("File info captured: %s\n", server_message);                        // print server message
     }
     else
     {
@@ -222,7 +222,7 @@ void process_request(char client_message_copy[8196], char client_message[8196], 
   }
   else if (strcmp(args[0], "MD") == 0) // MD command
   {
-    if (create_directory(args[1]) == 0)
+    if (create_dir_in_USBs(args[1], &usb1, &usb2, unique_files, &unique_files_count) == 0)
     {
       // Respond to client
       sprintf(server_message, "SUCCESS$$MD$$%s", args[1]); // how to deal with content

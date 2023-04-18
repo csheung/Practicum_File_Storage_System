@@ -125,7 +125,6 @@ int create_directory(const char *path)
     else
     {
         perror("Error creating directory");
-        printf("Out-of-loop Error creating directory %s\n", curr_dir);
         return 1;
     }
 }
