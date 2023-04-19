@@ -101,7 +101,7 @@ int main(void)
 
       if (count <= 1)
       {
-        printf("Not enough arguments. Please enter necessary arguments.\n");
+        printf("Invalid command. Please enter a valid one.\n");
         free(args);
         continue;
       }

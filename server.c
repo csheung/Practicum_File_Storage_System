@@ -60,13 +60,6 @@ int main(void)
   }
   printf("Socket created successfully\n");
 
-  // Set socket options
-  if (setsockopt(socket_desc, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)))
-  {
-    perror("setsockopt failed");
-    exit(EXIT_FAILURE);
-  }
-
   // Set port and IP:
   server_addr.sin_family = AF_INET;
   server_addr.sin_port = htons(2000);
@@ -284,7 +277,7 @@ void process_request(char client_message_copy[8196], char client_message[8196], 
 // Synchronize function
 void synchronize_()
 {
-  printf("Synchronizing...\n");
+  printf("Synchronizing USB devices ... ");
   // Do some synchronization work here
 }
 

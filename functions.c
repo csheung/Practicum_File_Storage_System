@@ -240,7 +240,7 @@ char *get_info(const char *filename)
     int status = pclose(fp);
     if (status == -1)
     {
-        // Error occurred calling pclose()
+        printf("Error occurred calling pclose()\n");
         return NULL;
     }
     else if (WIFEXITED(status))
@@ -249,7 +249,7 @@ char *get_info(const char *filename)
         int exit_status = WEXITSTATUS(status);
         if (exit_status != 0)
         {
-            // File not found
+            printf("File not found\n");
             return NULL;
         }
     }
@@ -352,16 +352,16 @@ int write_to_USBs(usb_t *usb1, usb_t *usb2, const char *file_path, const char *f
     {
         char usb1_file_path[MAX_FILE_PATH_LENGTH];
         sprintf(usb1_file_path, "%s%s", USB1_MOUNT_PATH, file_path);
-        if (usb1_file_path)
 
-            if (write_string_to_file(usb1, usb1_file_path, file_content) == 0)
-            {
-                add_filepath_to_usb(usb1, file_path);
-            }
-            else
-            {
-                perror("Error writing file\n");
-            }
+        if (write_string_to_file(usb1, usb1_file_path, file_content) == 0)
+        {
+            add_filepath_to_usb(usb1, file_path);
+        }
+        else
+        {
+            perror("Error writing file\n");
+            return -1;
+        }
     }
 
     if (usb2_exist == 0 && usb2) // USB2 is connected and instructed to write
@@ -375,6 +375,7 @@ int write_to_USBs(usb_t *usb1, usb_t *usb2, const char *file_path, const char *f
         else
         {
             perror("Error writing file\n");
+            return -1;
         }
     }
     return 0;
@@ -540,8 +541,8 @@ int synchronize(usb_t *usb1, usb_t *usb2, char unique_files[MAX_FILE_COUNT][MAX_
             {
                 char usb1_file_path[MAX_FILE_PATH_LENGTH];
                 sprintf(usb1_file_path, "%s%s", USB1_MOUNT_PATH, file_path);
-                if (usb1_file_path)
-                    file_content = read_file_to_string(usb1_file_path);
+
+                file_content = read_file_to_string(usb1_file_path);
                 write_to_USBs(NULL, usb2, file_path, file_content);
             }
         }
@@ -674,35 +675,34 @@ int create_dir_in_USBs(const char *file_path, usb_t *usb1, usb_t *usb2)
     return 0;
 }
 
-/*
-int main()
-{
-    // Construct two usb_t for usb1 and usb2
-    usb_t usb1 = create_USB_struct(USB1_MOUNT_PATH);
-    usb_t usb2 = create_USB_struct(USB2_MOUNT_PATH);
+// int main()
+// {
+//     // Construct two usb_t for usb1 and usb2
+//     usb_t usb1 = create_USB_struct(USB1_MOUNT_PATH);
+//     usb_t usb2 = create_USB_struct(USB2_MOUNT_PATH);
 
-    for (int i = 0; i < MAX_FILE_COUNT; i++)
-    {
-        memset(unique_files[i], '\0', MAX_FILE_PATH_LENGTH);
-    }
+//     for (int i = 0; i < MAX_FILE_COUNT; i++)
+//     {
+//         memset(unique_files[i], '\0', MAX_FILE_PATH_LENGTH);
+//     }
 
-    // /* Write to USBs */
-/* --------- TEST 1 ---------*/
+// Write to USBs
+//--------- TEST 1 ---------
 // printf("Test 1\n");
 // write_to_USBs(&usb1, &usb2, "abc.txt", read_file_to_string("a.txt"));
 // printf("written file abc.txt\n");
 // printf("%d %d\n", usb1.file_count, usb2.file_count);
 
-/* --------- TEST 2 ---------*/
+//--------- TEST 2 ---------
 // printf("next step to remove the file added in Test 1\n");
 // remove_file_from_USBs(&usb1, &usb2, "abc.txt");
 // printf("%d %d\n", usb1.file_count, usb2.file_count);
 // printf("after removing file\n");
 
-/* --------- TEST XXX ---------*/
+// --------- TEST XXX ---------
 // printf("Test XXX Test get_unique_paths()\n");
 
-/* --------- TEST 3 ---------*/
+// --------- TEST 3 ---------
 // printf("Test 3\n");
 // write_to_USBs(&usb1, &usb2, "test_log.txt", read_file_to_string("log.txt"));
 // printf("Writing file test_log.txt\n");
@@ -717,7 +717,7 @@ int main()
 
 // printf("Read test_log.txt after removing it from usb1: %s\n", read_from_USBs("test_log.txt", &usb1, &usb2, unique_files, &unique_files_count));
 
-/* --------- TEST 4 ---------*/
+// --------- TEST 4 ---------
 //     printf("Test 4 Add a new file to a new folder\n");
 //     write_to_USBs(&usb1, &usb2, "folder1/test_log.txt", read_file_to_string("log.txt"));
 //     printf("Writing file folder1/test_log.txt\n");
