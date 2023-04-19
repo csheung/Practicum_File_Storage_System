@@ -1,5 +1,5 @@
 /*
- * File Name: server_file_manager.c
+ * File Name: server_file_manager.h
  * Assignment Title: Practicum II - File Storage System
  *
  * CS5600 Computer Systems / Northeastern University

@@ -13,6 +13,8 @@
 #include <stdlib.h>
 #include "functions.c"
 
+#define SERVER_IP "127.0.0.1" // You can obtain the IP address of the server by running the ifconfig or ip addr command on the server's terminal.
+
 int socket_desc;
 struct sockaddr_in server_addr;
 char server_message[8196], server_message_copy[8196], client_message[8196], client_message_copy[8196];
@@ -31,7 +33,7 @@ int main(void)
   memset(server_message, '\0', sizeof(server_message));
   memset(client_message, '\0', sizeof(client_message));
 
-  // Create socket:
+  // Create socket file descriptor:
   socket_desc = socket(AF_INET, SOCK_STREAM, 0);
 
   if (socket_desc < 0)
@@ -45,7 +47,7 @@ int main(void)
   // Set port and IP the same as server-side:
   server_addr.sin_family = AF_INET;
   server_addr.sin_port = htons(2000);
-  server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+  server_addr.sin_addr.s_addr = inet_addr(SERVER_IP);
 
   // Send connection request to server:
   if (connect(socket_desc, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
@@ -63,7 +65,7 @@ int main(void)
     close(socket_desc);
     return -1;
   }
-  printf("Server's response: %s\n", server_message);
+  printf("Server's response: %s", server_message);
 
   // while receivedCommand is not exit, keep running the client
 
@@ -78,7 +80,7 @@ int main(void)
     memset(client_message_copy, '\0', sizeof(client_message_copy));
 
     printf("Enter message: ");
-    gets(client_message);
+    fgets(client_message, sizeof(client_message), stdin);
 
     if (strcmp(client_message, "esc") == 0)
     {
@@ -113,9 +115,12 @@ int main(void)
 
         if (content)
         {
-          // Respond to client:
-          sprintf(client_message, "PUT$$%s$$%s", args[2], content); // how to deal with content
-          printf("PUT command data -> %s\n", client_message);       // print server message
+          sprintf(client_message, "PUT$$%s$$%s", args[2], content);
+        }
+        else
+        {
+          printf("Local file does not exist, please enter a valid command.\n");
+          continue;
         }
       }
       else if (strcmp(args[0], "GET") == 0)
@@ -186,7 +191,7 @@ int main(void)
     //-------------- Switch the receivedCommand options -------------
     if (strcmp(receivedArgs[0], "ERROR") == 0) // ASK: If the remote file or path is omitted, use the values for the first argument.
     {
-      printf("%s", server_message); // print to be optimized
+      printf("Command error, please enter a new message.\n"); // print to be optimized
     }
     else if (strcmp(receivedArgs[0], "EXIT") == 0)
     {
@@ -199,7 +204,7 @@ int main(void)
     {
       if (strcmp(receivedArgs[1], "SAVE") == 0)
       {
-        if (write_string_to_file(receivedArgs[2], receivedArgs[3]) == 0)
+        if (write_string_to_file(NULL, receivedArgs[2], receivedArgs[3]) == 0)
         {
           printf("Success: Received content from server and wrote to file %s.\n", receivedArgs[3]);
         }

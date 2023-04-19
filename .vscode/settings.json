@@ -5,6 +5,7 @@
     "__locale": "c",
     "cstring": "c",
     "socket.h": "c",
-    "libusb.h": "c"
+    "libusb.h": "c",
+    "pthread.h": "c"
   }
 }

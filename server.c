@@ -16,7 +16,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <pthread.h>
-#include "server_file_manager.h"
+#include "functions.c"
 
 int socket_desc, client_sock;
 socklen_t client_size;
@@ -24,33 +24,48 @@ struct sockaddr_in server_addr, client_addr;
 
 char unique_files[MAX_FILE_COUNT][MAX_FILE_PATH_LENGTH];
 int unique_files_count;
+char unique_dirs[MAX_DIR_COUNT][MAX_DIR_PATH_LENGTH];
+int unique_dirs_count;
+
 // Construct two usb_t for usb1 and usb2
 usb_t usb1;
 usb_t usb2;
 
 void *connection_handler(void *);
 void process_request(char client_message_copy[8196], char client_message[8196], char server_message[8196]);
+void synchronize_();
+void *background_thread(void *arg);
+pthread_t bg_thread;
 
 int main(void)
 {
   usb1 = create_USB_struct(USB1_MOUNT_PATH);
   usb2 = create_USB_struct(USB2_MOUNT_PATH);
+  client_size = sizeof(client_addr);
+  int opt = 1;
 
   // memset unique files
   for (int i = 0; i < MAX_FILE_COUNT; i++)
   {
-      memset(unique_files[i], '\0', MAX_FILE_PATH_LENGTH);
+    memset(unique_files[i], '\0', MAX_FILE_PATH_LENGTH);
   }
 
-  // Create socket:
+  // Create socket file descriptor:
   socket_desc = socket(AF_INET, SOCK_STREAM, 0);
 
   if (socket_desc < 0)
   {
     printf("Error while creating socket\n");
-    return -1;
+    exit(EXIT_FAILURE);
   }
   printf("Socket created successfully\n");
+
+  // Set socket options
+  if (setsockopt(socket_desc, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)))
+  {
+    perror("setsockopt failed");
+    exit(EXIT_FAILURE);
+  }
 
   // Set port and IP:
   server_addr.sin_family = AF_INET;
@@ -65,11 +80,21 @@ int main(void)
   }
   printf("Done with binding\n");
 
-  // Listen:
-  listen(socket_desc, 3);
+  // Start listening for incoming connections
+  if (listen(socket_desc, 3) < 0)
+  {
+    perror("listen failed");
+    exit(EXIT_FAILURE);
+  }
 
   printf("Waiting for incoming connections...\n");
-  client_size = sizeof(client_addr);
+
+  // Synchonize connected USBs
+  if (pthread_create(&bg_thread, NULL, background_thread, NULL) != 0)
+  {
+    fprintf(stderr, "Error creating background thread\n");
+    exit(EXIT_FAILURE);
+  }
 
   // while command is not exit, keep running the server
   while (1)
@@ -97,6 +122,12 @@ int main(void)
     // Detach the thread:
     pthread_detach(thread_id);
   }
+  // Cancel background thread
+  if (pthread_cancel(bg_thread) != 0)
+  {
+    fprintf(stderr, "Error canceling background thread\n");
+    exit(EXIT_FAILURE);
+  }
   return 0;
 }
 
@@ -119,7 +150,6 @@ void *connection_handler(void *client_sock)
 
   while ((read_size = recv(sock, client_message, sizeof(client_message), 0)) > 0)
   {
-    printf("Right After recv(): %s\n", client_message);
 
     // Check if the client wants to exit:
     if (strcmp(client_message, "esc") == 0)
@@ -153,10 +183,6 @@ void *connection_handler(void *client_sock)
   else if (read_size == -1)
   {
     printf("Error while receiving data\n");
-    // Closing the socket:
-    // close(client_sock);
-    // close(socket_desc);
-    // return -1;
   }
   return NULL;
 }
@@ -178,18 +204,12 @@ void process_request(char client_message_copy[8196], char client_message[8196], 
     strcpy(args[count - 1], command);
     command = strtok(NULL, "$$");
   }
-  // print out the commands
-  // for (int i = 0; i < count; i++)
-  // {
-  //   printf("%s ", args[i]);
-  // }
-  // printf("\n");
 
   // ------------- Switch command options -------------
   if (strcmp(args[0], "GET") == 0) // ASK: If the remote file or path is omitted, use the values for the first argument.
   {
     // read file by passing in server path into content
-    content = read_from_USBs(args[1], &usb1, &usb2, unique_files, &unique_files_count);
+    content = read_from_USBs(args[1], &usb1, &usb2);
 
     if (content)
     {
@@ -199,64 +219,82 @@ void process_request(char client_message_copy[8196], char client_message[8196], 
     }
     else
     {
-      sprintf(server_message, "ERROR$$FILE_NOT_FOUND when doing GET Command.\n");
+      sprintf(server_message, "ERROR$$FILE_NOT_FOUND when doing GET Command.");
     }
     content = NULL;
   }
   else if (strcmp(args[0], "INFO") == 0) // INFO command
   {
     // read file by passing in server path into content
-    content = get_info_from_USB_file(args[1], &usb1, &usb2, unique_files, &unique_files_count);
+    content = get_info_from_USBs(args[1], &usb1, &usb2);
 
     if (content != NULL)
     {
       // Respond to client
       sprintf(server_message, "SUCCESS$$INFO$$%s", content); // how to deal with content
-      printf("File info captured: %s\n", server_message);                        // print server message
+      printf("File info captured: %s\n", server_message);    // print server message
     }
     else
     {
-      sprintf(server_message, "ERROR$$FILE_NOT_FOUND when doing INFO Command.\n");
+      sprintf(server_message, "ERROR$$FILE_NOT_FOUND when doing INFO Command.");
     }
     content = NULL;
   }
   else if (strcmp(args[0], "MD") == 0) // MD command
   {
-    if (create_dir_in_USBs(args[1], &usb1, &usb2, unique_files, &unique_files_count) == 0)
+    if (create_dir_in_USBs(args[1], &usb1, &usb2) == 0)
     {
       // Respond to client
       sprintf(server_message, "SUCCESS$$MD$$%s", args[1]); // how to deal with content
     }
     else
     {
-      sprintf(server_message, "ERROR$$CREATE_FOLDER_FAILURE when doing MD Command.\n");
+      sprintf(server_message, "ERROR$$CREATE_FOLDER_FAILURE when doing MD Command.");
     }
   }
   else if (strcmp(args[0], "PUT") == 0) // PUT command
   {
-    if (write_string_to_file(args[1], args[2]) == 0)
+    if (write_to_USBs(&usb1, &usb2, args[1], args[2]) == 0)
     {
       printf("Success: Received the content from client and wrote to file %s.\n", args[1]);
-      sprintf(server_message, "SUCCESS$$PUT$$%s\n", args[1]);
+      sprintf(server_message, "SUCCESS$$PUT$$%s", args[1]);
     }
     else
     {
-      sprintf(server_message, "ERROR$$PUT_FILE_FAILURE when doing PUT Command.\n");
+      sprintf(server_message, "ERROR$$PUT_FILE_FAILURE when doing PUT Command.");
       perror("Error writing file\n");
     }
   }
   else if (strcmp(args[0], "RM") == 0) // RM command
   {
-    if (remove_file(args[1]) == 0)
+    if (remove_file_from_USBs(&usb1, &usb2, args[1]) == 0)
     {
       // Respond to client
       sprintf(server_message, "SUCCESS$$RM$$%s", args[1]); // how to deal with content
     }
     else
     {
-      sprintf(server_message, "ERROR$$REMOVE_FILE_FAILURE when doing RM Command.\n");
+      sprintf(server_message, "ERROR$$REMOVE_FILE_FAILURE when doing RM Command.");
     }
   }
   // free args memory
   free(args);
+}
+
+// Synchronize function
+void synchronize_()
+{
+  printf("Synchronizing...\n");
+  // Do some synchronization work here
+}
+
+// Background thread function
+void *background_thread(void *arg)
+{
+  while (1)
+  {
+    synchronize_();
+    sleep(5);
+  }
+  return NULL;
 }
