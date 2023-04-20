@@ -61,7 +61,7 @@ int main(void)
 
   // Set port and IP:
   server_addr.sin_family = AF_INET;
-  server_addr.sin_port = htons(2000);
+  server_addr.sin_port = htons(5100);
   server_addr.sin_addr.s_addr = INADDR_ANY;
 
   // Bind to the set port and IP:
@@ -300,7 +300,7 @@ void *background_thread(void *args)
     synchronize(usb1, usb2, ((thread_args *)args)->unique_files, unique_files_count, ((thread_args *)args)->unique_dirs, unique_dirs_count);
 
     // Do some synchronization work here
-    sleep(60);
+    sleep(5);
   }
   return NULL;
 }

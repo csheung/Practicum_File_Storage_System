@@ -46,7 +46,7 @@ int main(void)
 
   // Set port and IP the same as server-side:
   server_addr.sin_family = AF_INET;
-  server_addr.sin_port = htons(2000);
+  server_addr.sin_port = htons(5100);
   server_addr.sin_addr.s_addr = inet_addr(SERVER_IP);
 
   // Send connection request to server:
