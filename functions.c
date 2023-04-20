@@ -33,6 +33,7 @@
 // for derrick test without USBs
 #define USB1_MOUNT_PATH "t1/"
 #define USB2_MOUNT_PATH "t2/"
+#define MOUNT_PATH_LENGTH 3
 
 // Declare a monitor to synchronize thread operations on the shared pm_heap,  page_allocation_list, etc.
 static pthread_mutex_t pm_mutex_usb1 = PTHREAD_MUTEX_INITIALIZER;
@@ -59,7 +60,7 @@ typedef struct
     int *unique_dirs_count;
     usb_t *usb1;
     usb_t *usb2;
-    char unique_file[MAX_FILE_COUNT][MAX_FILE_PATH_LENGTH];
+    char unique_files[MAX_FILE_COUNT][MAX_FILE_PATH_LENGTH];
     char unique_dirs[MAX_DIR_COUNT][MAX_DIR_PATH_LENGTH];
 } thread_args;
 
@@ -202,7 +203,6 @@ int create_directory(usb_t *usb, const char *path)
 
     // strtok to handle multiple directories
     char *dir = strtok((char *)path, "/");
-    printf("Inside Creating directory: %s\n", dir);
     int status;
     char curr_dir[256] = "";
     while (dir != NULL)
@@ -534,7 +534,8 @@ void list_files(usb_t *usb, char *path)
             }
             if (!is_duplicate)
             {
-                strncpy(usb->file_paths[usb->file_count], sub_path, MAX_FILE_PATH_LENGTH);
+
+                strncpy(usb->file_paths[usb->file_count], substr(sub_path, MOUNT_PATH_LENGTH, strlen(sub_path) - MOUNT_PATH_LENGTH), MAX_FILE_PATH_LENGTH);
                 usb->file_count++;
             }
             list_files(usb, sub_path);
@@ -555,7 +556,8 @@ void list_files(usb_t *usb, char *path)
             }
             if (!is_duplicate)
             {
-                strncpy(usb->file_paths[usb->file_count], file_path, MAX_FILE_PATH_LENGTH);
+
+                strncpy(usb->file_paths[usb->file_count], substr(file_path, MOUNT_PATH_LENGTH, strlen(file_path) - MOUNT_PATH_LENGTH), MAX_FILE_PATH_LENGTH);
                 usb->file_count++;
             }
         }
@@ -567,11 +569,6 @@ void scan_usb(usb_t *usb)
 {
     char *path = substr(usb->mount_path, 0, strlen(usb->mount_path) - 1); // directory path to list files from
     list_files(usb, path);
-    // print the file paths
-    for (int i = 0; i < usb->file_count; i++)
-    {
-        printf("%s\n", usb->file_paths[i]);
-    }
 }
 
 void get_unique_paths(usb_t *usb1, usb_t *usb2, char unique_files[MAX_FILE_COUNT][MAX_FILE_PATH_LENGTH], int *unique_files_count, char unique_dirs[MAX_DIR_COUNT][MAX_DIR_PATH_LENGTH], int *unique_dirs_count)
@@ -592,12 +589,7 @@ void get_unique_paths(usb_t *usb1, usb_t *usb2, char unique_files[MAX_FILE_COUNT
         }
         if (!exists)
         {
-            printf("before strcpy\n");
-            printf(" usb1->file_paths[i] %s\n", usb1->file_paths[i]);
-            printf(" *unique_files_count %d\n", *unique_files_count);
-            printf(" unique_files_ %p\n", unique_files);
-            strcpy(unique_files[*unique_files_count], usb1->file_paths[i]);
-            printf("after strcpy\n");
+            strcpy(unique_files[1], usb1->file_paths[i]);
             (*unique_files_count)++;
         }
     }
@@ -633,39 +625,60 @@ int synchronize(usb_t *usb1, usb_t *usb2, char unique_files[MAX_FILE_COUNT][MAX_
     char *usb1_file_path;
     char *usb2_file_path;
     get_unique_paths(usb1, usb2, unique_files, unique_files_count, unique_dirs, unique_dirs_count);
-    printf("unique path count %d", *unique_files_count);
+    printf("%d unique paths to be synchronized\n", *unique_files_count);
     for (int i = 0; i < *unique_files_count; i++)
     {
-        printf("unique path %s", file_path);
-        // strcpy(file_path, unique_files[i]);
 
-        // // if file in usb1.file_paths, write to usb2
-        // for (int j = 0; j < usb1->file_count; j++)
-        // {
+        strcpy(file_path, unique_files[i]);
 
-        //     if (strcmp(usb1->file_paths[j], file_path) == 0)
-        //     {
-        //         char usb1_file_path[MAX_FILE_PATH_LENGTH];
-        //         sprintf(usb1_file_path, "%s%s", USB1_MOUNT_PATH, file_path);
+        // if file in usb1.file_paths, write to usb2
+        for (int j = 0; j < usb1->file_count; j++)
+        {
 
-        //         file_content = read_file_to_string(usb1_file_path);
-        //         write_to_USBs(NULL, usb2, file_path, file_content);
-        //     }
-        // }
-        // // if file in usb2.file_paths, write to usb1
-        // for (int j = 0; j < usb2->file_count; j++)
-        // {
+            if (strcmp(usb1->file_paths[j], file_path) == 0)
+            {
+                printf("Synchronizing %s to %s\n", file_path, usb2->mount_path);
+                char usb1_file_path[MAX_FILE_PATH_LENGTH];
+                sprintf(usb1_file_path, "%s%s", USB1_MOUNT_PATH, file_path);
+                if (strchr(file_path, '.') != NULL)
+                {
+                    file_content = read_file_to_string(usb1_file_path);
+                    write_to_USBs(NULL, usb2, file_path, file_content);
+                }
+                else
+                {
+                    create_dir_in_USBs(file_path, NULL, usb2);
+                }
+            }
+        }
+        // if file in usb2.file_paths, write to usb1
+        for (int j = 0; j < usb2->file_count; j++)
+        {
 
-        //     if (strcmp(usb2->file_paths[j], file_path) == 0)
-        //     {
-        //         char usb2_file_path[MAX_FILE_PATH_LENGTH];
-        //         sprintf(usb2_file_path, "%s%s", USB2_MOUNT_PATH, file_path);
-
-        //         file_content = read_file_to_string(usb2_file_path);
-        //         write_to_USBs(usb1, NULL, file_path, file_content);
-        //     }
-        // }
+            if (strcmp(usb2->file_paths[j], file_path) == 0)
+            {
+                printf("Synchronizing %s to %s\n", file_path, usb1->mount_path);
+                char usb2_file_path[MAX_FILE_PATH_LENGTH];
+                sprintf(usb2_file_path, "%s%s", USB2_MOUNT_PATH, file_path);
+                if (strchr(file_path, '.') != NULL)
+                {
+                    file_content = read_file_to_string(usb2_file_path);
+                    write_to_USBs(usb1, NULL, file_path, file_content);
+                }
+                else
+                {
+                    create_dir_in_USBs(file_path, usb1, NULL);
+                }
+            }
+        }
     }
+    // clear unique files
+    for (int i = 0; i < MAX_FILE_COUNT; i++)
+    {
+        memset(unique_files[i], '\0', MAX_FILE_PATH_LENGTH);
+    }
+    *unique_files_count = 0;
+
     return 0;
 }
 
@@ -735,10 +748,14 @@ char *get_info_from_USBs(const char *file_path, usb_t *usb1, usb_t *usb2)
 int create_dir_in_USBs(const char *file_path, usb_t *usb1, usb_t *usb2)
 {
     check_USB_connections(usb1, usb2);
-    char *file_info = NULL;
+    if (usb1_exist == -1 && usb2_exist == -1)
+    {
+        perror("No USB connected.\n");
+        return -1;
+    }
     // TODO - monitor
     int usb1_result, usb2_result; // identifiers
-    if (usb1_exist == 0)
+    if (usb1_exist == 0 && usb1)
     {
         // need identifiers if using by another thread
 
@@ -747,7 +764,7 @@ int create_dir_in_USBs(const char *file_path, usb_t *usb1, usb_t *usb2)
         usb1_result = create_directory(usb1, usb1_file_path);
     }
 
-    if (usb2_exist == 0)
+    if (usb2_exist == 0 && usb2)
     {
         // need identifiers if using by another thread
 
@@ -756,24 +773,24 @@ int create_dir_in_USBs(const char *file_path, usb_t *usb1, usb_t *usb2)
         usb2_result = create_directory(usb2, usb2_file_path);
     }
 
-    // prompt error message to identify the location of failed connection
-    if (usb1_exist != 0 && usb2_exist != 0)
-    {
-        perror("create_dir_in_USBs -> No USB connected");
-        return 1;
-    }
-    else if (usb1_exist != 0)
-    {
-        perror("create_dir_in_USBs -> usb1 failed connection");
-        return 1;
-    }
-    else if (usb2_exist != 0)
-    {
-        perror("create_dir_in_USBs -> usb2 failed connection");
-        return 1;
-    }
+    // // prompt error message to identify the location of failed connection
+    // if (usb1_exist != 0 && usb2_exist != 0)
+    // {
+    //     perror("create_dir_in_USBs -> No USB connected");
+    //     return 1;
+    // }
+    // else if (usb1_exist != 0)
+    // {
+    //     perror("create_dir_in_USBs -> usb1 failed connection");
+    //     return 1;
+    // }
+    // else if (usb2_exist != 0)
+    // {
+    //     perror("create_dir_in_USBs -> usb2 failed connection");
+    //     return 1;
+    // }
 
-    if (usb1_result != 0 || usb2_result != 0)
+    if (usb1_result != 0 && usb2_result != 0)
     {
         perror("create_dir_in_USBs -> failed dir creation");
         return 1;

@@ -89,14 +89,12 @@ int main(void)
     memset(bg_thread_args.unique_dirs[i], '\0', MAX_DIR_PATH_LENGTH);
   }
 
-  // bg_thread_args.usb1 = &usb1;
-  // bg_thread_args.usb2 = &usb2;
-  // bg_thread_args.unique_files = unique_files;
-  // bg_thread_args.unique_files_count = &unique_files_count;
-  // bg_thread_args.unique_dirs = unique_dirs;
-  // bg_thread_args.unique_dirs_count = &unique_dirs_count;
+  bg_thread_args.usb1 = &usb1;
+  bg_thread_args.usb2 = &usb2;
+  bg_thread_args.unique_files_count = &unique_files_count;
+  bg_thread_args.unique_dirs_count = &unique_dirs_count;
 
-  if (pthread_create(&bg_thread, NULL, background_thread, (void *)bg_thread_args) != 0)
+  if (pthread_create(&bg_thread, NULL, background_thread, (void *)&bg_thread_args) != 0)
   {
     fprintf(stderr, "Error creating background thread\n");
     exit(EXIT_FAILURE);
@@ -294,14 +292,12 @@ void *background_thread(void *args)
   int *unique_dirs_count = ((thread_args *)args)->unique_dirs_count;
   usb_t *usb1 = ((thread_args *)args)->usb1;
   usb_t *usb2 = ((thread_args *)args)->usb2;
-  char unique_files = ((thread_args *)args)->unique_files;
-  char unique_dirs = ((thread_args *)args)->unique_dirs;
 
   while (1)
   {
 
     printf("Synchronizing USB devices ... \n");
-    synchronize(usb1, usb2, unique_files, unique_files_count, unique_dirs, unique_dirs_count);
+    synchronize(usb1, usb2, ((thread_args *)args)->unique_files, unique_files_count, ((thread_args *)args)->unique_dirs, unique_dirs_count);
 
     // Do some synchronization work here
     sleep(60);
