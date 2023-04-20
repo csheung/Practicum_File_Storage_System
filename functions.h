@@ -71,7 +71,7 @@ int remove_file(const char *path);
 char *get_info(const char *filename);
 
 // Create a USB struct with the given mount path
-usb_t create_USB_struct(const char *usb_mount_path);
+usb_t create_USB_struct();
 
 // Write a file to both USBs
 int write_to_USBs(usb_t *usb1, usb_t *usb2, const char *file_path, const char *file_content);
@@ -105,5 +105,8 @@ char *get_info_from_USBs(const char *file_path, usb_t *usb1, usb_t *usb2);
 
 // Create a directory in both USBs
 int create_dir_in_USBs(const char *file_path, usb_t *usb1, usb_t *usb2);
+
+// Concatenate Info and Content of a file
+char *concat_info_content(char *str1, char *str2);
 
 #endif // FUNCTIONS_H

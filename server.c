@@ -38,8 +38,11 @@ pthread_t bg_thread;
 
 int main(void)
 {
-  usb1 = create_USB_struct(USB1_MOUNT_PATH);
-  usb2 = create_USB_struct(USB2_MOUNT_PATH);
+  // Initialize two devices and set up with config
+  usb1 = create_USB_struct();
+  usb2 = create_USB_struct();
+  read_config_file("USB_config.txt", usb1.mount_path, usb2.mount_path);
+
   client_size = sizeof(client_addr);
   int opt = 1;
 

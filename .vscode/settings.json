@@ -12,6 +12,7 @@
     "bitset": "c",
     "unordered_map": "c",
     "chrono": "c",
-    "sstream": "c"
+    "sstream": "c",
+    "functions.h": "c"
   }
 }

@@ -116,7 +116,14 @@ int main(void)
 
         if (content)
         {
-          sprintf(client_message, "PUT$$%s$$%s", args[2], content);
+          if (count == 2)
+          {
+            sprintf(client_message, "PUT$$%s$$%s", args[1], content);
+          }
+          else if (count == 3)
+          {
+            sprintf(client_message, "PUT$$%s$$%s", args[2], content);
+          }
         }
         else
         {
@@ -215,7 +222,7 @@ int main(void)
       }
       else if (strcmp(receivedArgs[1], "INFO") == 0)
       {
-        printf("Success: Captured file information from USB:\n%s\n", receivedArgs[2]);
+        printf("Success: file information:\n%s\nFile Content:\n%s\n", receivedArgs[2], receivedArgs[3]);
       }
       else if (strcmp(receivedArgs[1], "PUT") == 0)
       {
