@@ -503,7 +503,7 @@ int remove_file_from_USBs(usb_t *usb1, usb_t *usb2, const char *file_path)
  */
 void list_files(usb_t *usb, char *path)
 {
-    printf("list_files usb->mountpath %s .\n");
+    printf("list_files usb->mountpath %s\n");
     DIR *dir;
     struct dirent *entry;
     char *path_copy;
