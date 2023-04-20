@@ -34,8 +34,8 @@ static pthread_mutex_t pm_mutex_usb2 = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t pm_cond_usb2 = PTHREAD_COND_INITIALIZER;
 static int access_available_usb2 = 1; // Initially, a boolean predicate, 1 indicates that the shared data is available to access
 
-// char unique_files[MAX_FILE_COUNT][MAX_FILE_PATH_LENGTH];
-// int unique_files_count;
+// char unique_paths[MAX_FILE_COUNT][MAX_FILE_PATH_LENGTH];
+// int unique_path_count;
 
 // Flags showing whether the USB drive is connected to the machine
 int usb1_exist = -1;
@@ -43,7 +43,7 @@ int usb2_exist = -1;
 
 /**
  * Returns a substring of the given string
-*/
+ */
 char *substr(const char *str, int start, int length)
 {
     char *substr = malloc(length + 1);
@@ -59,7 +59,7 @@ char *substr(const char *str, int start, int length)
 
 /**
  * Reads the contents of a file into a string
-*/
+ */
 char *read_file_to_string(const char *filename)
 {
 
@@ -96,13 +96,12 @@ char *read_file_to_string(const char *filename)
 
 /**
  * Writes a string to a file
-*/
+ */
 int write_string_to_file(usb_t *usb, const char *filename, const char *str)
 {
     FILE *fp;
     // char filename_copy[256];
     char *directory = dirname((char *)filename);
-    int status;
     char *dir = strtok(directory, "/");
     char curr_dir[256] = "";
     while (dir != NULL)
@@ -110,11 +109,7 @@ int write_string_to_file(usb_t *usb, const char *filename, const char *str)
         strcat(curr_dir, dir);
         if (access(curr_dir, F_OK) == -1)
         {
-            status = mkdir(curr_dir, 0777);
-            if (usb != NULL)
-            {
-                add_dirpath_to_usb(usb, curr_dir);
-            }
+            mkdir(curr_dir, 0777);
         }
         strcat(curr_dir, "/");
         dir = strtok(NULL, "/");
@@ -125,7 +120,7 @@ int write_string_to_file(usb_t *usb, const char *filename, const char *str)
     if (!fp)
     {
         printf("Failed to open the file.\n");
-        return 1;
+        return -1;
     }
 
     fprintf(fp, "%s", str); // write the string to the file
@@ -154,14 +149,14 @@ int path_exists(const char *path)
 
 /**
  * Creates a directory at the given path
-*/
+ */
 int create_directory(usb_t *usb, const char *path)
 {
     // handle error for dir already existed
     if (path_exists(path))
     {
         // printf("Path already exists: %s\n", path);
-        return 1;
+        return -1;
     }
 
     // strtok to handle multiple directories
@@ -175,7 +170,6 @@ int create_directory(usb_t *usb, const char *path)
         if (access(curr_dir, F_OK) == -1)
         {
             status = mkdir(curr_dir, 0777);
-            add_dirpath_to_usb(usb, curr_dir);
         }
         strcat(curr_dir, "/");
         dir = strtok(NULL, "/");
@@ -189,13 +183,13 @@ int create_directory(usb_t *usb, const char *path)
     else
     {
         perror("Error creating directory");
-        return 1;
+        return -1;
     }
 }
 
 /**
  * Removes a file at the given path
-*/
+ */
 int remove_file(const char *path)
 {
     int result = remove(path);
@@ -214,7 +208,7 @@ int remove_file(const char *path)
 
 /**
  * Retrieves file information as a formatted string
-*/
+ */
 char *get_info(const char *filename)
 {
     char command[1024];
@@ -225,24 +219,6 @@ char *get_info(const char *filename)
     {
         fprintf(stderr, "Error executing command: %s\n", command);
         return NULL;
-    }
-
-    // Check if the file was found
-    int status = pclose(fp);
-    if (status == -1)
-    {
-        printf("Error occurred calling pclose()\n");
-        return NULL;
-    }
-    else if (WIFEXITED(status))
-    {
-        // Command exited normally
-        int exit_status = WEXITSTATUS(status);
-        if (exit_status != 0)
-        {
-            printf("File not found\n");
-            return NULL;
-        }
     }
 
     char *output = NULL;
@@ -256,19 +232,33 @@ char *get_info(const char *filename)
         if (!output)
         {
             fprintf(stderr, "Error allocating memory for output\n");
+            pclose(fp);
             return NULL;
         }
         memcpy(output + output_size, buffer, len + 1);
         output_size += len;
     }
+
+    int status = pclose(fp);
+    if (status == -1)
+    {
+        printf("Error occurred calling pclose()\n");
+        free(output);
+        return NULL;
+    }
+
     return output;
 }
 
 /**
  * Manage the accessibility of the monitor
-*/
-void enter_available_monitor()
+ */
+int enter_available_monitor()
 {
+    // Seed the random number generator with the current time
+    srand(time(NULL));
+    // Generate a random number between 0 and 1 using the rand() function
+    int random_usb = rand() % 2;
     // Check if the monitor for USB1 is available
     if (usb1_exist == 0 && access_available_usb1)
     {
@@ -281,8 +271,8 @@ void enter_available_monitor()
         }
         // Set the access_available flag to indicate that the USB1 monitor is currently being used
         access_available_usb1 = 0;
-        return;
-    } 
+        return 0;
+    }
     // Check if the monitor for USB2 is available
     else if (usb2_exist == 0 && access_available_usb2)
     {
@@ -295,14 +285,57 @@ void enter_available_monitor()
         }
         // Set the access_available flag to indicate that the USB2 monitor is currently being used
         access_available_usb2 = 0;
-        return;
+        return 1;
     }
     else
     {
-        // Seed the random number generator with the current time
-        srand(time(NULL));
-        // Generate a random number between 0 and 1 using the rand() function
-        int random_usb = rand() % 2;
+        if (random_usb == 0)
+        {
+            // Lock the mutex for the USB1 monitor
+            pthread_mutex_lock(&pm_mutex_usb1);
+            // Wait until the USB1 monitor is available before acquiring the lock
+            while (!access_available_usb1)
+            {
+                pthread_cond_wait(&pm_cond_usb1, &pm_mutex_usb1);
+            }
+            // Set the access_available flag to indicate that the USB1 monitor is currently being used
+            access_available_usb1 = 0;
+            return 0;
+        }
+        else
+        {
+            // Lock the mutex for the USB2 monitor
+            pthread_mutex_lock(&pm_mutex_usb2);
+            // Wait until the USB2 monitor is available before acquiring the lock
+            while (!access_available_usb2)
+            {
+                pthread_cond_wait(&pm_cond_usb2, &pm_mutex_usb2);
+            }
+            // Set the access_available flag to indicate that the USB2 monitor is currently being used
+            access_available_usb2 = 0;
+            return 1;
+        }
+    }
+}
+
+/**
+ *
+ * Release monitor, 0 - release monitor on USB1, 1 - release monitor on USB2
+ */
+void release_monitor(int monitor)
+{
+    if (monitor == 0)
+    {
+        access_available_usb1 = 1;
+        pthread_cond_signal(&pm_cond_usb1);
+        pthread_mutex_unlock(&pm_mutex_usb1);
+    }
+    else
+    {
+
+        access_available_usb2 = 1;
+        pthread_cond_signal(&pm_cond_usb2);
+        pthread_mutex_unlock(&pm_mutex_usb2);
     }
 }
 
@@ -333,30 +366,11 @@ void check_USB_connections(usb_t *usb1, usb_t *usb2)
 
 /**
  * Function to write data to connected USB devices
-*/
+ */
 int write_to_USBs(usb_t *usb1, usb_t *usb2, const char *file_path, const char *file_content)
 {
-    // Check if both usbs are connected and available
-    if (usb1_exist == 0 && usb2_exist == 0)
-    {
-        // Lock the mutex for the USB1 and USB2 monitor
-        pthread_mutex_lock(&pm_mutex_usb1);
-        // Wait until the monitors are available before acquiring the lock
-        while (!access_available_usb1)
-        {
-            pthread_cond_wait(&pm_cond_usb1, &pm_mutex_usb1);
-        }
-        access_available_usb1 = 0;
-
-        pthread_mutex_lock(&pm_mutex_usb2);
-        while (!access_available_usb2)
-        {
-            pthread_cond_wait(&pm_cond_usb2, &pm_mutex_usb2);
-        }
-        // Set the access_available flag to 0 for both USBs
-        access_available_usb2 = 0;
-    }
-
+    int monitor_acquired;
+    int result = -1;
     // Check the connection status of both USB devices
     check_USB_connections(usb1, usb2);
     // If neither USB device is connected, return an error
@@ -365,50 +379,54 @@ int write_to_USBs(usb_t *usb1, usb_t *usb2, const char *file_path, const char *f
         perror("No USB connected.\n");
         return -1;
     }
-
-    if (usb1_exist == 0 && usb1) // USB1 is connected and instructed to write
+    if (usb1 != NULL && usb2 != NULL)
     {
-        char usb1_file_path[MAX_FILE_PATH_LENGTH];
-        sprintf(usb1_file_path, "%s%s", USB1_MOUNT_PATH, file_path);
-
-        if (write_string_to_file(usb1, usb1_file_path, file_content) == 0)
+        monitor_acquired = enter_available_monitor();
+        if (monitor_acquired == 0)
         {
-            add_filepath_to_usb(usb1, file_path);
+            char usb1_file_path[MAX_FILE_PATH_LENGTH];
+            sprintf(usb1_file_path, "%s%s", USB1_MOUNT_PATH, file_path);
+            result = write_string_to_file(usb1, usb1_file_path, file_content);
         }
         else
         {
-            perror("Error writing file\n");
-            return -1;
+            char usb2_file_path[MAX_FILE_PATH_LENGTH];
+            sprintf(usb2_file_path, "%s%s", USB2_MOUNT_PATH, file_path);
+            result = write_string_to_file(usb2, usb2_file_path, file_content);
         }
     }
-
-    if (usb2_exist == 0 && usb2) // USB2 is connected and instructed to write
+    else
     {
-        char usb2_file_path[MAX_FILE_PATH_LENGTH];
-        sprintf(usb2_file_path, "%s%s", USB2_MOUNT_PATH, file_path);
-        if (write_string_to_file(usb2, usb2_file_path, file_content) == 0)
+        // Monitor acquired already by background thread - synchronize()
+        if (usb1_exist == 0 && usb1) // USB1 is connected and instructed to write
         {
-            add_filepath_to_usb(usb2, file_path);
+            char usb1_file_path[MAX_FILE_PATH_LENGTH];
+            sprintf(usb1_file_path, "%s%s", USB1_MOUNT_PATH, file_path);
+
+            result = write_string_to_file(usb1, usb1_file_path, file_content);
         }
-        else
+
+        if (usb2_exist == 0 && usb2) // USB2 is connected and instructed to write
         {
-            perror("Error writing file\n");
-            return -1;
+            char usb2_file_path[MAX_FILE_PATH_LENGTH];
+            sprintf(usb2_file_path, "%s%s", USB2_MOUNT_PATH, file_path);
+            result = write_string_to_file(usb2, usb2_file_path, file_content);
         }
     }
-    // release the mutex and signal the condition for both USBs
-    access_available_usb1 = 1;
-    access_available_usb2 = 1;
-    pthread_cond_signal(&pm_cond_usb1);
-    pthread_cond_signal(&pm_cond_usb2);
-    pthread_mutex_unlock(&pm_mutex_usb1);
-    pthread_mutex_unlock(&pm_mutex_usb2);
-    return 0;
+    if (result == -1)
+    {
+        perror("write_to_USBs error: cannot write file\n");
+    }
+    if (usb1 != NULL && usb2 != NULL)
+    {
+        release_monitor(monitor_acquired);
+    }
+    return result;
 }
 
 /**
  * Remove a filepath from the USB
-*/
+ */
 int remove_filepath_from_usb(usb_t *usb, const char *file_path)
 {
     // Iterate through the file_paths array
@@ -435,7 +453,7 @@ int remove_filepath_from_usb(usb_t *usb, const char *file_path)
 
 /**
  * Function to add a file path to a USB device's file_paths array
-*/
+ */
 int add_filepath_to_usb(usb_t *usb, const char *file_path)
 {
     // Copy the given file path to the next available index in the file_paths array
@@ -443,44 +461,8 @@ int add_filepath_to_usb(usb_t *usb, const char *file_path)
     return 0;
 }
 
-/**
- * Function to add a directory path to a USB device's dir_paths array
-*/
-int add_dirpath_to_usb(usb_t *usb, const char *dir_path)
-{
-    // Copy the given directory path to the next available index in the dir_paths array
-    strcpy(usb->dir_paths[usb->dir_count++], dir_path);
-    return 0;
-}
-
-/**
- * Function to remove a directory path from a USB device's dir_paths array
-*/
-int remove_dirpath_from_usb(usb_t *usb, const char *dir_path)
-{
-    // Iterate through the dir_paths array
-    int i, j;
-    for (i = 0; i < usb->dir_count; i++)
-    {
-        // If the directory path is found
-        if (strcmp(usb->dir_paths[i], dir_path) == 0)
-        {
-            // Shift the remaining directory paths one position to the left
-            for (j = i; j < (usb->dir_count - 1); j++)
-            {
-                strcpy(usb->dir_paths[j], usb->dir_paths[j + 1]);
-            }
-            // Clear the last directory path in the array
-            memset(usb->dir_paths[usb->dir_count - 1], '\0', MAX_FILE_PATH_LENGTH);
-            // Update the directory count
-            usb->dir_count--;
-            break;
-        }
-    }
-    return 0;
-}
-
 // Function to remove a file from both USB devices
+// Remove is special. Our current approach to this is that it may remove one copy from a USB, but if synchronizing process is taking off, this removed copy may be recovered.
 int remove_file_from_USBs(usb_t *usb1, usb_t *usb2, const char *file_path)
 {
     int overall_res = 0;
@@ -500,8 +482,6 @@ int remove_file_from_USBs(usb_t *usb1, usb_t *usb2, const char *file_path)
         char usb1_file_path[MAX_FILE_PATH_LENGTH];
         sprintf(usb1_file_path, "%s%s", USB1_MOUNT_PATH, file_path);
         overall_res += remove_file(usb1_file_path);
-        // Remove the file path from USB1's file_paths array
-        remove_filepath_from_usb(usb1, file_path);
     }
     if (usb2_exist == 0)
     {
@@ -509,9 +489,6 @@ int remove_file_from_USBs(usb_t *usb1, usb_t *usb2, const char *file_path)
         char usb2_file_path[MAX_FILE_PATH_LENGTH];
         sprintf(usb2_file_path, "%s%s", USB2_MOUNT_PATH, file_path);
         overall_res += remove_file(usb2_file_path);
-
-        // Remove the file path from USB2's file_paths array
-        remove_filepath_from_usb(usb2, file_path);
     }
     // If both remove_file calls are not successful, return failure
     if (overall_res == -2)
@@ -523,17 +500,19 @@ int remove_file_from_USBs(usb_t *usb1, usb_t *usb2, const char *file_path)
 
 /**
  * Function to list files in a directory on a USB device
-*/
+ */
 void list_files(usb_t *usb, char *path)
 {
+    printf("list_files usb->mountpath %s .\n");
     DIR *dir;
     struct dirent *entry;
+    char *path_copy;
 
     // Open the specified directory
     dir = opendir(path);
     if (dir == NULL)
     {
-        printf("%s is not connected.", usb->mount_path);
+        printf("%s is not connected.\n", usb->mount_path);
         return;
     }
 
@@ -552,7 +531,7 @@ void list_files(usb_t *usb, char *path)
             // Construct the subdirectory path
             char sub_path[MAX_FILE_PATH_LENGTH];
             snprintf(sub_path, sizeof(sub_path), "%s/%s", path, entry->d_name);
-            
+
             // Check if the subdirectory path is already in the file_paths array
             int is_duplicate = 0;
             for (int i = 0; i < usb->file_count; i++)
@@ -566,9 +545,10 @@ void list_files(usb_t *usb, char *path)
             // If the subdirectory path is not a duplicate, add it to the file_paths array
             if (!is_duplicate)
             {
-
-                strncpy(usb->file_paths[usb->file_count], substr(sub_path, MOUNT_PATH_LENGTH, strlen(sub_path) - MOUNT_PATH_LENGTH), MAX_FILE_PATH_LENGTH);
+                path_copy = substr(sub_path, MOUNT_PATH_LENGTH, strlen(sub_path) - MOUNT_PATH_LENGTH);
+                strncpy(usb->file_paths[usb->file_count], path_copy, MAX_FILE_PATH_LENGTH);
                 usb->file_count++;
+                free(path_copy);
             }
             // Recursively list files in the subdirectory
             list_files(usb, sub_path);
@@ -592,9 +572,10 @@ void list_files(usb_t *usb, char *path)
             // If the file path is not a duplicate, add it to the file_paths array
             if (!is_duplicate)
             {
-
-                strncpy(usb->file_paths[usb->file_count], substr(file_path, MOUNT_PATH_LENGTH, strlen(file_path) - MOUNT_PATH_LENGTH), MAX_FILE_PATH_LENGTH);
+                path_copy = substr(file_path, MOUNT_PATH_LENGTH, strlen(file_path) - MOUNT_PATH_LENGTH);
+                strncpy(usb->file_paths[usb->file_count], path_copy, MAX_FILE_PATH_LENGTH);
                 usb->file_count++;
+                free(path_copy);
             }
         }
     }
@@ -604,14 +585,16 @@ void list_files(usb_t *usb, char *path)
 // Scans the given USB device and lists all files within it
 void scan_usb(usb_t *usb)
 {
-    char *path = substr(usb->mount_path, 0, strlen(usb->mount_path) - 1); // directory path to list files from
+    char *path = substr(usb->mount_path, 0, strlen(usb->mount_path) - 1);
+    printf("scan usb path %s\n", path);
     list_files(usb, path);
+    free(path);
 }
 
 // Compares file paths in two USBs and finds unique files and directories
-void get_unique_paths(usb_t *usb1, usb_t *usb2, char unique_files[MAX_FILE_COUNT][MAX_FILE_PATH_LENGTH], int *unique_files_count, char unique_dirs[MAX_DIR_COUNT][MAX_DIR_PATH_LENGTH], int *unique_dirs_count)
+void get_unique_paths(usb_t *usb1, usb_t *usb2, char unique_paths[MAX_FILE_COUNT][MAX_FILE_PATH_LENGTH], int *unique_path_count)
 {
-    *unique_files_count = 0;
+    *unique_path_count = 0;
 
     // Find unique files from usb1 compared to usb2
     for (int i = 0; i < usb1->file_count; i++)
@@ -627,8 +610,8 @@ void get_unique_paths(usb_t *usb1, usb_t *usb2, char unique_files[MAX_FILE_COUNT
         }
         if (!exists)
         {
-            strcpy(unique_files[*unique_files_count], usb1->file_paths[i]);
-            (*unique_files_count)++;
+            strcpy(unique_paths[*unique_path_count], usb1->file_paths[i]);
+            (*unique_path_count)++;
         }
     }
 
@@ -646,17 +629,30 @@ void get_unique_paths(usb_t *usb1, usb_t *usb2, char unique_files[MAX_FILE_COUNT
         }
         if (!exists)
         {
-            strcpy(unique_files[*unique_files_count], usb2->file_paths[i]);
-            (*unique_files_count)++;
+            strcpy(unique_paths[*unique_path_count], usb2->file_paths[i]);
+            (*unique_path_count)++;
         }
+    }
+}
+
+void clear_paths(usb_t *usb1, usb_t *usb2, char unique_paths[MAX_FILE_COUNT][MAX_FILE_PATH_LENGTH], int *unique_path_count)
+{
+    // initiate every file path as an EOF
+    for (int i = 0; i < MAX_FILE_COUNT; i++)
+    {
+        memset(usb1->file_paths[i], '\0', MAX_FILE_PATH_LENGTH);
+        memset(usb2->file_paths[i], '\0', MAX_FILE_PATH_LENGTH);
+        memset(unique_paths[i], '\0', MAX_FILE_PATH_LENGTH);
+        *unique_path_count = 0;
     }
 }
 
 /**
  * Sychronize the USBs
-*/
-int synchronize(usb_t *usb1, usb_t *usb2, char unique_files[MAX_FILE_COUNT][MAX_FILE_PATH_LENGTH], int *unique_files_count, char unique_dirs[MAX_DIR_COUNT][MAX_DIR_PATH_LENGTH], int *unique_dirs_count)
+ */
+int synchronize(usb_t *usb1, usb_t *usb2, char unique_paths[MAX_FILE_COUNT][MAX_FILE_PATH_LENGTH], int *unique_path_count)
 {
+    check_USB_connections(usb1, usb2);
     // Check if both USB devices are connected and available.
     if (usb1_exist == 0 && usb2_exist == 0)
     {
@@ -665,11 +661,11 @@ int synchronize(usb_t *usb1, usb_t *usb2, char unique_files[MAX_FILE_COUNT][MAX_
         // Wait until the monitors are available before acquiring the lock.
         while (!access_available_usb1)
         {
-        pthread_cond_wait(&pm_cond_usb1, &pm_mutex_usb1);
+            pthread_cond_wait(&pm_cond_usb1, &pm_mutex_usb1);
         }
         // Set the access_available flag to 0 for USB1.
         access_available_usb1 = 0;
-            // Lock the mutex for the USB2 monitor.
+        // Lock the mutex for the USB2 monitor.
         pthread_mutex_lock(&pm_mutex_usb2);
         // Wait until the monitor is available before acquiring the lock.
         while (!access_available_usb2)
@@ -679,7 +675,13 @@ int synchronize(usb_t *usb1, usb_t *usb2, char unique_files[MAX_FILE_COUNT][MAX_
         // Set the access_available flag to 0 for USB2.
         access_available_usb2 = 0;
     }
-
+    else
+    {
+        printf("No two USBs connected, synchronization cancels.\n");
+        return -1;
+    }
+    clear_paths(usb1, usb2, unique_paths, unique_path_count);
+    // printf("-- after clear path %d unique paths to be synchronized\n", *unique_path_count);
     // Scan the contents of USB1 and USB2.
     scan_usb(usb1);
     scan_usb(usb2);
@@ -692,77 +694,71 @@ int synchronize(usb_t *usb1, usb_t *usb2, char unique_files[MAX_FILE_COUNT][MAX_
     int synchronized = 0;
 
     // Get the unique paths from USB1 and USB2 that need to be synchronized.
-    get_unique_paths(usb1, usb2, unique_files, unique_files_count, unique_dirs, unique_dirs_count);
-    printf("%d unique paths to be synchronized\n", *unique_files_count);
+    // get_unique_paths(usb1, usb2, unique_paths, unique_path_count);
+    // printf("%d unique paths to be synchronized\n", *unique_path_count);
 
-    // Iterate through the unique files and synchronize them.
-    for (int i = 0; i < *unique_files_count; i++)
-    {
-        synchronized = 0; // mark the file or directory synchronized
-        memset(file_path, MAX_FILE_PATH_LENGTH, '\0');
-        strcpy(file_path, unique_files[i]);
-        printf("unique file path %s\n", unique_files[i]);
+    // // Iterate through the unique files and synchronize them.
+    // for (int i = 0; i < *unique_path_count; i++)
+    // {
+    //     synchronized = 0; // mark the file or directory synchronized
+    //     memset(file_path, '\0', MAX_FILE_PATH_LENGTH);
+    //     strcpy(file_path, unique_paths[i]);
+    //     printf("unique file path %s\n", unique_paths[i]);
 
-        // Synchronize files from USB1 to USB2.
-        for (int j = 0; j < usb1_file_count_before_sync; j++)
-        {
-            if (strcmp(usb1->file_paths[j], file_path) == 0)
-            {
-                printf("Synchronizing %s to %s\n", file_path, usb2->mount_path);
-                char usb1_file_path[MAX_FILE_PATH_LENGTH];
-                sprintf(usb1_file_path, "%s%s", USB1_MOUNT_PATH, file_path);
+    //     // Synchronize files from USB1 to USB2.
+    //     for (int j = 0; j < usb1_file_count_before_sync; j++)
+    //     {
+    //         if (strcmp(usb1->file_paths[j], file_path) == 0)
+    //         {
+    //             printf("Synchronizing %s to %s\n", file_path, usb2->mount_path);
+    //             char usb1_file_path[MAX_FILE_PATH_LENGTH];
+    //             sprintf(usb1_file_path, "%s%s", USB1_MOUNT_PATH, file_path);
 
-                // If the file path is a file, read its content and write it to USB2.
-                if (strchr(file_path, '.') != NULL)
-                {
-                    file_content = read_file_to_string(usb1_file_path);
-                    write_to_USBs(NULL, usb2, file_path, file_content);
-                }
-                // If the file path is a directory, create the directory in USB2.
-                else
-                {
-                    create_dir_in_USBs(file_path, NULL, usb2);
-                }
-            }
-        }
+    //             // If the file path is a file, read its content and write it to USB2.
+    //             if (strchr(file_path, '.') != NULL)
+    //             {
+    //                 file_content = read_from_USBs(usb1_file_path,usb1,NULL);
+    //                 write_to_USBs(NULL, usb2, file_path, file_content);
+    //                 free(file_content);
+    //             }
+    //             // If the file path is a directory, create the directory in USB2.
+    //             else
+    //             {
+    //                 create_dir_in_USBs(file_path, NULL, usb2);
+    //             }
+    //         }
+    //     }
 
-        // Synchronize files from USB2 to USB1.
-        for (int j = 0; j < usb2_file_count_before_sync; j++)
-        {
-            if (strcmp(usb2->file_paths[j], file_path) == 0)
-            {
-                printf("Synchronizing %s to %s\n", file_path, usb1->mount_path);
-                char usb2_file_path[MAX_FILE_PATH_LENGTH];
-                sprintf(usb2_file_path, "%s%s", USB2_MOUNT_PATH, file_path);
+    //     // Synchronize files from USB2 to USB1.
+    //     for (int j = 0; j < usb2_file_count_before_sync; j++)
+    //     {
+    //         if (strcmp(usb2->file_paths[j], file_path) == 0)
+    //         {
+    //             printf("Synchronizing %s to %s\n", file_path, usb1->mount_path);
+    //             char usb2_file_path[MAX_FILE_PATH_LENGTH];
+    //             sprintf(usb2_file_path, "%s%s", USB2_MOUNT_PATH, file_path);
 
-                // If the file path is a file, read its content and write it to USB1.
-                if (strchr(file_path, '.') != NULL)
-                {
-                    file_content = read_file_to_string(usb2_file_path);
-                    write_to_USBs(usb1, NULL, file_path, file_content);
-                }
-                // If the file path is a directory, create the directory in USB1.
-                else
-                {
-                    create_dir_in_USBs(file_path, usb1, NULL);
-                }
-            }
-        }
-    }   
-
-    // Clear unique files list after synchronization.
-    for (int i = 0; i < MAX_FILE_COUNT; i++)
-    {
-        memset(unique_files[i], '\0', MAX_FILE_PATH_LENGTH);
-    }
-    *unique_files_count = 0;
+    //             // If the file path is a file, read its content and write it to USB1.
+    //             if (strchr(file_path, '.') != NULL)
+    //             {
+    //                 file_content = read_from_USBs(usb1_file_path,NULL,usb2);
+    //                 write_to_USBs(usb1, NULL, file_path, file_content);
+    //                 free(file_content);
+    //             }
+    //             // If the file path is a directory, create the directory in USB1.
+    //             else
+    //             {
+    //                 create_dir_in_USBs(file_path, usb1, NULL);
+    //             }
+    //         }
+    //     }
+    // }
 
     // Set the mutexes for USB1 and USB2 as available and signal waiting threads.
     access_available_usb1 = 1;
     access_available_usb2 = 1;
     pthread_cond_signal(&pm_cond_usb1);
     pthread_cond_signal(&pm_cond_usb2);
-
     // Release the mutex locks after accessing shared data structures.
     pthread_mutex_unlock(&pm_mutex_usb1);
     pthread_mutex_unlock(&pm_mutex_usb2);
@@ -773,56 +769,60 @@ int synchronize(usb_t *usb1, usb_t *usb2, char unique_files[MAX_FILE_COUNT][MAX_
 // Adapted for Q8
 /**
  * Read content from USB(s)
-*/
+ */
 char *read_from_USBs(const char *file_path, usb_t *usb1, usb_t *usb2)
 {
-    check_USB_connections(usb1, usb2);
+    int monitor_acquired;
     char *file_content = NULL;
-    // TODO - add monitor
-    if (usb1_exist == 0)
+    check_USB_connections(usb1, usb2);
+    if (usb1_exist == -1 && usb2_exist == -1)
     {
-        // Lock the mutex for the USB1 monitor
-        pthread_mutex_lock(&pm_mutex_usb1);
-        // Wait until the monitors are available before acquiring the lock
-        while (!access_available_usb1)
-        {
-            pthread_cond_wait(&pm_cond_usb1, &pm_mutex_usb1);
-        }
-        access_available_usb1 = 0;
-        
-        char usb1_file_path[MAX_FILE_PATH_LENGTH];
-        sprintf(usb1_file_path, "%s%s", USB1_MOUNT_PATH, file_path);
-        file_content = read_file_to_string(usb1_file_path);
-
-        // release the mutex
-        access_available_usb1 = 1;
-        pthread_cond_signal(&pm_cond_usb1);
-        pthread_mutex_unlock(&pm_mutex_usb1);
+        perror("No USB connected.\n");
+        return -1;
     }
-    else if (usb2_exist == 0)
+    // TODO - add monitor
+    if (usb1 != NULL && usb2 != NULL)
     {
-        // Lock the mutex for the USB2 monitor
-        pthread_mutex_lock(&pm_mutex_usb2);
-        while (!access_available_usb2)
+        monitor_acquired = enter_available_monitor();
+        if (monitor_acquired == 0)
         {
-            pthread_cond_wait(&pm_cond_usb2, &pm_mutex_usb2);
+            char usb1_file_path[MAX_FILE_PATH_LENGTH];
+            sprintf(usb1_file_path, "%s%s", USB1_MOUNT_PATH, file_path);
+            file_content = read_file_to_string(usb1_file_path);
         }
-        // Set the access_available flag to 0 for both
-        access_available_usb2 = 0;
-
-        char usb2_file_path[MAX_FILE_PATH_LENGTH];
-        sprintf(usb2_file_path, "%s%s", USB2_MOUNT_PATH, file_path);
-        file_content = read_file_to_string(usb2_file_path);
-
-        // release the mutex
-        access_available_usb2 = 1;
-        pthread_cond_signal(&pm_cond_usb2);
-        pthread_mutex_unlock(&pm_mutex_usb2);
+        else
+        {
+            char usb2_file_path[MAX_FILE_PATH_LENGTH];
+            sprintf(usb2_file_path, "%s%s", USB2_MOUNT_PATH, file_path);
+            file_content = read_file_to_string(usb2_file_path);
+        }
     }
     else
     {
-        perror("read_from_USBs -> No USB connected");
+        // Monitor acquired already by background thread - synchronize()
+        if (usb1_exist == 0 && usb1)
+        {
+            char usb1_file_path[MAX_FILE_PATH_LENGTH];
+            sprintf(usb1_file_path, "%s%s", USB1_MOUNT_PATH, file_path);
+            file_content = read_file_to_string(usb1_file_path);
+        }
+        else if (usb2_exist == 0 && usb2)
+        {
+            char usb2_file_path[MAX_FILE_PATH_LENGTH];
+            sprintf(usb2_file_path, "%s%s", USB2_MOUNT_PATH, file_path);
+            file_content = read_file_to_string(usb2_file_path);
+        }
     }
+
+    if (file_content == NULL)
+    {
+        perror("read_from_USBs error -> No file found\n");
+    }
+    if (usb1 != NULL && usb2 != NULL)
+    {
+        release_monitor(monitor_acquired);
+    }
+
     return file_content;
 }
 
@@ -831,120 +831,116 @@ char *read_from_USBs(const char *file_path, usb_t *usb1, usb_t *usb2)
  */
 char *get_info_from_USBs(const char *file_path, usb_t *usb1, usb_t *usb2)
 {
-    check_USB_connections(usb1, usb2);
     char *file_info = NULL;
-
-    // TODO - add monitor
-    if (usb1_exist == 0)
-    {
-        // Lock the mutex for the USB1 monitor
-        pthread_mutex_lock(&pm_mutex_usb1);
-        // Wait until the monitors are available before acquiring the lock
-        while (!access_available_usb1)
-        {
-            pthread_cond_wait(&pm_cond_usb1, &pm_mutex_usb1);
-        }
-        access_available_usb1 = 0;
-
-        char usb1_file_path[MAX_FILE_PATH_LENGTH];
-        sprintf(usb1_file_path, "%s%s", USB1_MOUNT_PATH, file_path);
-        file_info = get_info(usb1_file_path);
-
-        // release the mutex
-        access_available_usb1 = 1;
-        pthread_cond_signal(&pm_cond_usb1);
-        pthread_mutex_unlock(&pm_mutex_usb1);
-    }
-    else if (usb2_exist == 0)
-    {
-        // Lock the mutex for the USB2 monitor
-        pthread_mutex_lock(&pm_mutex_usb2);
-        while (!access_available_usb2)
-        {
-            pthread_cond_wait(&pm_cond_usb2, &pm_mutex_usb2);
-        }
-        // Set the access_available_usb2 flag to 0
-        access_available_usb2 = 0;
-
-        char usb2_file_path[MAX_FILE_PATH_LENGTH];
-        sprintf(usb2_file_path, "%s%s", USB2_MOUNT_PATH, file_path);
-        file_info = get_info(usb2_file_path);
-
-        // release the mutex
-        access_available_usb2 = 1;
-        pthread_cond_signal(&pm_cond_usb2);
-        pthread_mutex_unlock(&pm_mutex_usb2);
-    }
-    else
-    {
-        perror("get_info_from_USBs -> No USB connected");
-    }
-    return file_info;
-}
-
-/**
- * Create identical directories for USB devices
- */
-int create_dir_in_USBs(const char *file_path, usb_t *usb1, usb_t *usb2)
-{
+    int monitor_acquired;
     check_USB_connections(usb1, usb2);
     if (usb1_exist == -1 && usb2_exist == -1)
     {
         perror("No USB connected.\n");
         return -1;
     }
-    // TODO - monitor
-    int usb1_result, usb2_result; // identifiers
-    if (usb1_exist == 0 && usb1)
+    // TODO - add monitor
+    if (usb1 != NULL && usb2 != NULL)
     {
-        // Lock the mutex for the USB1 monitor
-        pthread_mutex_lock(&pm_mutex_usb1);
-        // Wait until the monitors are available before acquiring the lock
-        while (!access_available_usb1)
+        monitor_acquired = enter_available_monitor();
+        if (monitor_acquired == 0)
         {
-            pthread_cond_wait(&pm_cond_usb1, &pm_mutex_usb1);
+            char usb1_file_path[MAX_FILE_PATH_LENGTH];
+            sprintf(usb1_file_path, "%s%s", USB1_MOUNT_PATH, file_path);
+            file_info = get_info(usb1_file_path);
         }
-        access_available_usb1 = 0;
-
-        char usb1_file_path[MAX_FILE_PATH_LENGTH];
-        sprintf(usb1_file_path, "%s%s", USB1_MOUNT_PATH, file_path);
-        usb1_result = create_directory(usb1, usb1_file_path);
-
-        // release the mutex
-        access_available_usb1 = 1;
-        pthread_cond_signal(&pm_cond_usb1);
-        pthread_mutex_unlock(&pm_mutex_usb1);
-    }
-
-    if (usb2_exist == 0 && usb2)
-    {
-        // Lock the mutex for the USB2 monitor
-        pthread_mutex_lock(&pm_mutex_usb2);
-        while (!access_available_usb2)
+        else
         {
-            pthread_cond_wait(&pm_cond_usb2, &pm_mutex_usb2);
+            char usb2_file_path[MAX_FILE_PATH_LENGTH];
+            sprintf(usb2_file_path, "%s%s", USB2_MOUNT_PATH, file_path);
+            file_info = get_info(usb2_file_path);
         }
-        // Set the access_available flag to 0
-        access_available_usb2 = 0;
-
-        char usb2_file_path[MAX_FILE_PATH_LENGTH];
-        sprintf(usb2_file_path, "%s%s", USB2_MOUNT_PATH, file_path);
-        usb2_result = create_directory(usb2, usb2_file_path);
-
-        // release the mutex
-        access_available_usb2 = 1;
-        pthread_cond_signal(&pm_cond_usb2);
-        pthread_mutex_unlock(&pm_mutex_usb2);
     }
-
-    if (usb1_result != 0 && usb2_result != 0)
+    else
     {
-        perror("create_dir_in_USBs -> failed dir creation");
-        return 1;
+        // Monitor acquired already by background thread - synchronize()
+        if (usb1_exist == 0 && usb1)
+        {
+            char usb1_file_path[MAX_FILE_PATH_LENGTH];
+            sprintf(usb1_file_path, "%s%s", USB1_MOUNT_PATH, file_path);
+            file_info = get_info(usb1_file_path);
+        }
+        else if (usb2_exist == 0 && usb2)
+        {
+            char usb2_file_path[MAX_FILE_PATH_LENGTH];
+            sprintf(usb2_file_path, "%s%s", USB2_MOUNT_PATH, file_path);
+            file_info = get_info(usb2_file_path);
+        }
     }
-    return 0;
+    if (file_info == NULL)
+    {
+        perror("get_info_from_USBs error -> No file found\n");
+    }
+    if (usb1 != NULL && usb2 != NULL)
+    {
+        release_monitor(monitor_acquired);
+    }
+
+    return file_info;
 }
 
+/**
+ * Create identical directories for USB devices, 0 success, -1 failure
+ */
+int create_dir_in_USBs(const char *file_path, usb_t *usb1, usb_t *usb2)
+{
+    int monitor_acquired;
+    int result = -1;
+    check_USB_connections(usb1, usb2);
+    if (usb1_exist == -1 && usb2_exist == -1)
+    {
+        perror("No USB connected.\n");
+        return -1;
+    }
+
+    // TODO - enter just one monitor for client request
+    if (usb1 != NULL && usb2 != NULL)
+    {
+        monitor_acquired = enter_available_monitor();
+        if (monitor_acquired == 0)
+        {
+            char usb1_file_path[MAX_FILE_PATH_LENGTH];
+            sprintf(usb1_file_path, "%s%s", USB1_MOUNT_PATH, file_path);
+            result = create_directory(usb1, usb1_file_path);
+        }
+        else
+        {
+            char usb2_file_path[MAX_FILE_PATH_LENGTH];
+            sprintf(usb2_file_path, "%s%s", USB2_MOUNT_PATH, file_path);
+            result = create_directory(usb2, usb2_file_path);
+        }
+    }
+    else
+    { // Monitor acquired already by background thread - synchronize()
+        if (usb1_exist == 0 && usb1)
+        {
+            char usb1_file_path[MAX_FILE_PATH_LENGTH];
+            sprintf(usb1_file_path, "%s%s", USB1_MOUNT_PATH, file_path);
+            result = create_directory(usb1, usb1_file_path);
+        }
+        if (usb2_exist == 0 && usb2)
+        {
+            char usb2_file_path[MAX_FILE_PATH_LENGTH];
+            sprintf(usb2_file_path, "%s%s", USB2_MOUNT_PATH, file_path);
+            result = create_directory(usb2, usb2_file_path);
+        }
+    }
+
+    if (result == -1)
+    {
+        perror("create_dir_in_USBs error: folder already exists");
+    }
+    if (usb1 != NULL && usb2 != NULL)
+    {
+        release_monitor(monitor_acquired);
+    }
+    return result;
+}
 
 // int main()
 // {
@@ -954,7 +950,7 @@ int create_dir_in_USBs(const char *file_path, usb_t *usb1, usb_t *usb2)
 
 //     for (int i = 0; i < MAX_FILE_COUNT; i++)
 //     {
-//         memset(unique_files[i], '\0', MAX_FILE_PATH_LENGTH);
+//         memset(unique_paths[i], '\0', MAX_FILE_PATH_LENGTH);
 //     }
 
 // Write to USBs
@@ -986,7 +982,7 @@ int create_dir_in_USBs(const char *file_path, usb_t *usb1, usb_t *usb2)
 // remove("t1/test_log.txt");
 // remove_filepath_from_usb(&usb1, "test_log.txt");
 
-// printf("Read test_log.txt after removing it from usb1: %s\n", read_from_USBs("test_log.txt", &usb1, &usb2, unique_files, &unique_files_count));
+// printf("Read test_log.txt after removing it from usb1: %s\n", read_from_USBs("test_log.txt", &usb1, &usb2, unique_paths, &unique_path_count));
 
 // --------- TEST 4 ---------
 //     printf("Test 4 Add a new file to a new folder\n");

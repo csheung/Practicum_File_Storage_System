@@ -83,9 +83,9 @@ int main(void)
     gets(client_message);
     // fgets(client_message, sizeof(client_message), stdin);
 
-    if (strcmp(client_message, "esc") == 0)
+    if (strcmp(client_message, "exit") == 0)
     {
-      sprintf(client_message, "esc");
+      sprintf(client_message, "exit");
     }
     else
     { // --------- Parse client input ---------
@@ -102,7 +102,7 @@ int main(void)
 
       if (count <= 1)
       {
-        printf("Invalid command. Please enter a valid one.\n");
+        printf("Not enough arguments. Please enter a valid command.\n");
         free(args);
         continue;
       }
@@ -126,10 +126,9 @@ int main(void)
       }
       else if (strcmp(args[0], "GET") == 0)
       {
-        printf("GET before strcmp\n");
         if (count == 2)
         {
-          sprintf(client_message, "GET$$%s$$temp.txt", args[1]);
+          sprintf(client_message, "GET$$%s$$%s", args[1], args[1]);
         }
         else if (count == 3)
         {
@@ -207,7 +206,7 @@ int main(void)
       {
         if (write_string_to_file(NULL, receivedArgs[2], receivedArgs[3]) == 0)
         {
-          printf("Success: Received content from server and wrote to file %s.\n", receivedArgs[3]);
+          printf("Success: Received content from server and wrote to file:\n %s\n", receivedArgs[3]);
         }
       }
       else if (strcmp(receivedArgs[1], "MD") == 0)

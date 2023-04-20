@@ -22,8 +22,8 @@ int socket_desc, client_sock;
 socklen_t client_size;
 struct sockaddr_in server_addr, client_addr;
 
-char unique_files[MAX_FILE_COUNT][MAX_FILE_PATH_LENGTH];
-int unique_files_count = 0;
+char unique_paths[MAX_FILE_COUNT][MAX_FILE_PATH_LENGTH];
+int unique_path_count = 0;
 char unique_dirs[MAX_DIR_COUNT][MAX_DIR_PATH_LENGTH];
 int unique_dirs_count = 0;
 
@@ -46,7 +46,7 @@ int main(void)
   // memset unique files
   for (int i = 0; i < MAX_FILE_COUNT; i++)
   {
-    memset(unique_files[i], '\0', MAX_FILE_PATH_LENGTH);
+    memset(unique_paths[i], '\0', MAX_FILE_PATH_LENGTH);
   }
 
   // Create socket file descriptor:
@@ -85,14 +85,12 @@ int main(void)
   thread_args bg_thread_args;
   for (int i = 0; i < MAX_FILE_COUNT; i++)
   {
-    memset(bg_thread_args.unique_files[i], '\0', MAX_FILE_PATH_LENGTH);
-    memset(bg_thread_args.unique_dirs[i], '\0', MAX_DIR_PATH_LENGTH);
+    memset(bg_thread_args.unique_paths[i], '\0', MAX_FILE_PATH_LENGTH);
   }
 
   bg_thread_args.usb1 = &usb1;
   bg_thread_args.usb2 = &usb2;
-  bg_thread_args.unique_files_count = &unique_files_count;
-  bg_thread_args.unique_dirs_count = &unique_dirs_count;
+  bg_thread_args.unique_path_count = &unique_path_count;
 
   if (pthread_create(&bg_thread, NULL, background_thread, (void *)&bg_thread_args) != 0)
   {
@@ -156,7 +154,7 @@ void *connection_handler(void *client_sock)
   {
 
     // Check if the client wants to exit:
-    if (strcmp(client_message, "esc") == 0)
+    if (strcmp(client_message, "exit") == 0)
     {
       memset(server_message, '\0', sizeof(server_message));
       printf("Client %d requested to disconnect!\n", sock);
@@ -288,19 +286,18 @@ void process_request(char client_message_copy[8196], char client_message[8196], 
 // Background thread function
 void *background_thread(void *args)
 {
-  int *unique_files_count = ((thread_args *)args)->unique_files_count;
-  int *unique_dirs_count = ((thread_args *)args)->unique_dirs_count;
+  int *unique_path_count = ((thread_args *)args)->unique_path_count;
   usb_t *usb1 = ((thread_args *)args)->usb1;
   usb_t *usb2 = ((thread_args *)args)->usb2;
-
+  int count = 1;
   while (1)
   {
 
-    printf("Synchronizing USB devices ... \n");
-    synchronize(usb1, usb2, ((thread_args *)args)->unique_files, unique_files_count, ((thread_args *)args)->unique_dirs, unique_dirs_count);
+    printf("%d Synchronizing USB devices ... \n", count++);
+    synchronize(usb1, usb2, ((thread_args *)args)->unique_paths, unique_path_count);
 
     // Do some synchronization work here
-    sleep(5);
+    sleep(3);
   }
   return NULL;
 }

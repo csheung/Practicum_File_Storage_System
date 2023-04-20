@@ -40,27 +40,20 @@
 typedef struct
 {
     int file_count;
-    int dir_count;
     char mount_path[256];
     char file_paths[MAX_FILE_COUNT][MAX_FILE_PATH_LENGTH];
-    char dir_paths[MAX_DIR_COUNT][MAX_DIR_PATH_LENGTH];
 } usb_t;
 
 typedef struct
 {
-    int *unique_files_count;
-    int *unique_dirs_count;
+    int *unique_path_count;
     usb_t *usb1;
     usb_t *usb2;
-    char unique_files[MAX_FILE_COUNT][MAX_FILE_PATH_LENGTH];
-    char unique_dirs[MAX_DIR_COUNT][MAX_DIR_PATH_LENGTH];
+    char unique_paths[MAX_FILE_COUNT][MAX_FILE_PATH_LENGTH];
 } thread_args;
 
 // Read the content of a file into a string
 char *read_file_to_string(const char *filename);
-
-// Add a directory path to the USB struct
-int add_dirpath_to_usb(usb_t *usb, const char *dir_path);
 
 // Write a string to a file on the USB
 int write_string_to_file(usb_t *usb, const char *filename, const char *str);
@@ -99,10 +92,10 @@ int remove_dirpath_from_usb(usb_t *usb, const char *dir_path);
 int remove_file_from_USBs(usb_t *usb1, usb_t *usb2, const char *file_path);
 
 // Get unique paths from both USBs
-void get_unique_paths(usb_t *usb1, usb_t *usb2, char unique_files[MAX_FILE_COUNT][MAX_FILE_PATH_LENGTH], int *unique_files_count, char unique_dirs[MAX_DIR_COUNT][MAX_DIR_PATH_LENGTH], int *unique_dirs_count);
+void get_unique_paths(usb_t *usb1, usb_t *usb2, char unique_paths[MAX_FILE_COUNT][MAX_FILE_PATH_LENGTH], int *unique_path_count);
 
 // Synchronize the content of both USBs
-int synchronize(usb_t *usb1, usb_t *usb2, char unique_files[MAX_FILE_COUNT][MAX_FILE_PATH_LENGTH], int *unique_files_count, char unique_dirs[MAX_DIR_COUNT][MAX_DIR_PATH_LENGTH], int *unique_dirs_count);
+int synchronize(usb_t *usb1, usb_t *usb2, char unique_paths[MAX_FILE_COUNT][MAX_FILE_PATH_LENGTH], int *unique_path_count);
 
 // Read a file from both USBs
 char *read_from_USBs(const char *file_path, usb_t *usb1, usb_t *usb2);
