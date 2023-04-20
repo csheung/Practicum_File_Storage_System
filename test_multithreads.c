@@ -61,19 +61,6 @@ void test_multi_get() {
     }
 }
 
-/**
- * Test multiple GET commands
-*/
-void test_multi_info(char *commands) {
-    // Create and run threads for each command
-    for (int i = 0; i < NUM_THREADS; i++) {
-        int rc = pthread_create(&threads[i], NULL, run_fget, (void *)commands[i]);
-        if (rc) {
-            fprintf(stderr, "Error: pthread_create returned code %d\n", rc);
-            exit(1);
-        }
-    }
-}
 
 /* main */
 int main() {
@@ -97,25 +84,95 @@ int main() {
     bg_thread_args.usb1 = &usb1;
     bg_thread_args.usb2 = &usb2;
     bg_thread_args.unique_path_count = &unique_path_count;
+    
+    // Commands to test the five functionalities
+    // char *commands[] = {
+    //     "GET source_path destination_path",
+    //     "MD new_directory_path",
+    //     "INFO file_path",
+    //     "PUT source_path destination_path",
+    //     "RM file_path"
+    // };
 
 
-    // --------- TEST 0 ---------
-    // Test 
-    // printf("--------- TEST 0 ---------\n");
-
-
-    // --------- TEST 1 ---------
-    // Test multiple GET commands
+    // Test 1 multiple GET commands
     printf("--------- TEST 1 ---------\n");
     printf("Test multi-threading GET commands...\n");
-    // Commands to test the five functionalities
-    char *commands[] = {
-        "GET source_path destination_path",
-        "MD new_directory_path",
-        "INFO file_path",
-        "PUT source_path destination_path",
-        "RM file_path"
-    };
+
+    // define all GET commands for testing
+    char *c0 = "GET folder1/test_log.txt local/root.txt";
+    char *c1 = "GET folder1/test_log.txt local/root.txt";
+    char *c2 = "GET folder1/test_log.txt local/root.txt";
+    char *c3 = "GET folder1/test_log.txt local/root.txt";
+    char *c4 = "GET folder1/test_log.txt local/root.txt";
+    char *c5 = "GET folder2/folder3/test_log.txt local/root.txt";
+    char *c6 = "GET folder2/folder3/test_log.txt local/root.txt";
+    char *c7 = "GET folder2/folder3/test_log.txt local/root.txt";
+    char *c8 = "GET folder2/folder3/test_log.txt local/root.txt";
+    char *c9 = "GET folder2/folder3/test_log.txt local/root.txt";
+
+
+    // Test 2 INFO -- INFO command for all threads
+    printf("--------- TEST 2 ---------\n");
+    printf("Test multi-threading INFO commands...\n");
+
+    // define all INFO commands for testing
+    char *c0 = "INFO folder1/test_log.txt";
+    char *c1 = "INFO folder2/folder3/test_log.txt";
+    char *c2 = "INFO folder1/test_log.txt";
+    char *c3 = "INFO folder2/folder3/test_log.txt";
+    char *c4 = "INFO folder1/test_log.txt";
+    char *c5 = "INFO folder1/test_log.txt";
+    char *c6 = "INFO folder1/test_log.txt";
+    char *c7 = "INFO folder2/folder3/test_log.txt";
+    char *c8 = "INFO folder2/folder3/test_log.txt";
+    char *c9 = "INFO folder2/folder3/test_log.txt";
+
+
+
+
+    // Test 3 MD -- MD command for all threads
+    printf("--------- TEST 3 ---------\n");
+    printf("Test multi-threading MD commands...\n");
+
+    // define all MD commands for testing
+    char *c0 = "MD folder1/test_log.txt";
+    char *c1 = "MD folder2/folder3/test_log.txt";
+    char *c2 = "MD folder1/test_log.txt";
+    char *c3 = "MD folder2/folder3/test_log.txt";
+    char *c4 = "MD folder1/test_log.txt";
+    char *c5 = "MD folder1/test_log.txt";
+    char *c6 = "MD folder1/test_log.txt";
+    char *c7 = "MD folder2/folder3/test_log.txt";
+    char *c8 = "MD folder2/folder3/test_log.txt";
+    char *c9 = "MD folder2/folder3/test_log.txt";
+
+
+    // Test 4 PUT -- PUT command for all threads
+    printf("--------- TEST 4 ---------\n");
+    printf("Test multi-threading PUT commands...\n");
+
+    // define all INFO commands for testing
+    char *c0 = "INFO folder1/test_log.txt";
+    char *c1 = "INFO folder2/folder3/test_log.txt";
+    char *c2 = "INFO folder1/test_log.txt";
+    char *c3 = "INFO folder2/folder3/test_log.txt";
+    char *c4 = "INFO folder1/test_log.txt";
+    char *c5 = "INFO folder1/test_log.txt";
+    char *c6 = "INFO folder1/test_log.txt";
+    char *c7 = "INFO folder2/folder3/test_log.txt";
+    char *c8 = "INFO folder2/folder3/test_log.txt";
+    char *c9 = "INFO folder2/folder3/test_log.txt";
+
+
+    // Test 5 RM -- RM command for all threads
+    printf("--------- TEST 5 ---------\n");
+    printf("Test multi-threading RM commands...\n");
+
+
+    // Test 6 - Question 8 Parallel Read
+    printf("--------- TEST 6 ---------\n");
+    printf("Test Parallel Read...\n");
 
 
     return 0;
