@@ -153,9 +153,10 @@ int create_directory(usb_t *usb, const char *path)
         // printf("Path already exists: %s\n", path);
         return -1;
     }
-
+    char path_copy[MAX_FILE_PATH_LENGTH];
+    strcpy(path_copy, path);
     // strtok to handle multiple directories
-    char *dir = strtok((char *)path, "/");
+    char *dir = strtok((char *)path_copy, "/");
     int status;
     char curr_dir[256] = "";
     while (dir != NULL)
@@ -371,7 +372,7 @@ int write_to_USBs(usb_t *usb1, usb_t *usb2, const char *file_path, const char *f
     // If neither USB device is connected, return an error
     if (usb1_exist == -1 && usb2_exist == -1)
     {
-        perror("No USB connected.\n");
+        perror("No USB connected");
         return -1;
     }
     if (usb1 != NULL && usb2 != NULL)
@@ -410,40 +411,13 @@ int write_to_USBs(usb_t *usb1, usb_t *usb2, const char *file_path, const char *f
     }
     if (result == -1)
     {
-        perror("write_to_USBs error: cannot write file\n");
+        perror("write_to_USBs error");
     }
     if (usb1 != NULL && usb2 != NULL)
     {
         release_monitor(monitor_acquired);
     }
     return result;
-}
-
-/**
- * Remove a filepath from the USB
- */
-int remove_filepath_from_usb(usb_t *usb, const char *file_path)
-{
-    // Iterate through the file_paths array
-    int i, j;
-    for (i = 0; i < usb->file_count; i++)
-    {
-        // If the file path is found
-        if (strcmp(usb->file_paths[i], file_path) == 0)
-        {
-            // Shift the remaining file paths one position to the left
-            for (j = i; j < (usb->file_count - 1); j++)
-            {
-                strcpy(usb->file_paths[j], usb->file_paths[j + 1]);
-            }
-            // Clear the last file path in the array
-            memset(usb->file_paths[usb->file_count - 1], '\0', MAX_FILE_PATH_LENGTH);
-            // update file count
-            usb->file_count--;
-            break;
-        }
-    }
-    return 0;
 }
 
 /**
@@ -498,7 +472,6 @@ int remove_file_from_USBs(usb_t *usb1, usb_t *usb2, const char *file_path)
  */
 void list_files(usb_t *usb, char *path)
 {
-    printf("list_files usb -> mountpath %s\n");
     DIR *dir;
     struct dirent *entry;
     char *path_copy;
@@ -507,7 +480,6 @@ void list_files(usb_t *usb, char *path)
     dir = opendir(path);
     if (dir == NULL)
     {
-        printf("%s is not connected.\n", usb->mount_path);
         return;
     }
 
@@ -526,7 +498,6 @@ void list_files(usb_t *usb, char *path)
             // Construct the subdirectory path
             char sub_path[MAX_FILE_PATH_LENGTH];
             snprintf(sub_path, sizeof(sub_path), "%s/%s", path, entry->d_name);
-
             // Check if the subdirectory path is already in the file_paths array
             int is_duplicate = 0;
             for (int i = 0; i < usb->file_count; i++)
@@ -542,6 +513,7 @@ void list_files(usb_t *usb, char *path)
             {
                 path_copy = substr(sub_path, MOUNT_PATH_LENGTH, strlen(sub_path) - MOUNT_PATH_LENGTH);
                 add_filepath_to_usb(usb, path_copy);
+
                 free(path_copy);
             }
             // Recursively list files in the subdirectory
@@ -552,6 +524,7 @@ void list_files(usb_t *usb, char *path)
         {
             // Construct the file path
             char file_path[MAX_FILE_PATH_LENGTH];
+
             snprintf(file_path, sizeof(file_path), "%s/%s", path, entry->d_name);
             // Check if the file path is already in the file_paths array
             int is_duplicate = 0;
@@ -568,6 +541,7 @@ void list_files(usb_t *usb, char *path)
             {
                 path_copy = substr(file_path, MOUNT_PATH_LENGTH, strlen(file_path) - MOUNT_PATH_LENGTH);
                 add_filepath_to_usb(usb, path_copy);
+
                 free(path_copy);
             }
         }
@@ -579,7 +553,6 @@ void list_files(usb_t *usb, char *path)
 void scan_usb(usb_t *usb)
 {
     char *path = substr(usb->mount_path, 0, strlen(usb->mount_path) - 1);
-    printf("scan usb path %s\n", path);
     list_files(usb, path);
     free(path);
 }
@@ -630,6 +603,8 @@ void get_unique_paths(usb_t *usb1, usb_t *usb2, char unique_paths[MAX_FILE_COUNT
 
 void clear_paths(usb_t *usb1, usb_t *usb2, char unique_paths[MAX_FILE_COUNT][MAX_FILE_PATH_LENGTH], int *unique_path_count)
 {
+    usb1->file_count = 0;
+    usb2->file_count = 0;
     // initiate every file path as an EOF
     for (int i = 0; i < MAX_FILE_COUNT; i++)
     {
@@ -673,8 +648,8 @@ int synchronize(usb_t *usb1, usb_t *usb2, char unique_paths[MAX_FILE_COUNT][MAX_
         printf("No two USBs connected, synchronization cancels.\n");
         return -1;
     }
+    // Reset stored paths in usb structs from the last scan.
     clear_paths(usb1, usb2, unique_paths, unique_path_count);
-    // printf("-- after clear path %d unique paths to be synchronized\n", *unique_path_count);
     // Scan the contents of USB1 and USB2.
     scan_usb(usb1);
     scan_usb(usb2);
@@ -682,70 +657,80 @@ int synchronize(usb_t *usb1, usb_t *usb2, char unique_paths[MAX_FILE_COUNT][MAX_
     // Declare variables for file and directory synchronization.
     char file_path[MAX_FILE_PATH_LENGTH];
     char *file_content;
-    int usb1_file_count_before_sync = usb1->file_count;
-    int usb2_file_count_before_sync = usb2->file_count;
     int synchronized = 0;
 
-    // Get the unique paths from USB1 and USB2 that need to be synchronized.
-    // get_unique_paths(usb1, usb2, unique_paths, unique_path_count);
-    // printf("%d unique paths to be synchronized\n", *unique_path_count);
-
-    // // Iterate through the unique files and synchronize them.
-    // for (int i = 0; i < *unique_path_count; i++)
+    // DEBUG -- Print all scanned files
+    // for (int i = 0; i < usb1->file_count; i++)
     // {
-    //     synchronized = 0; // mark the file or directory synchronized
-    //     memset(file_path, '\0', MAX_FILE_PATH_LENGTH);
-    //     strcpy(file_path, unique_paths[i]);
-    //     printf("unique file path %s\n", unique_paths[i]);
-
-    //     // Synchronize files from USB1 to USB2.
-    //     for (int j = 0; j < usb1_file_count_before_sync; j++)
-    //     {
-    //         if (strcmp(usb1->file_paths[j], file_path) == 0)
-    //         {
-    //             printf("Synchronizing %s to %s\n", file_path, usb2->mount_path);
-    //             char usb1_file_path[MAX_FILE_PATH_LENGTH];
-    //             sprintf(usb1_file_path, "%s%s", usb1->mount_path, file_path);
-
-    //             // If the file path is a file, read its content and write it to USB2.
-    //             if (strchr(file_path, '.') != NULL)
-    //             {
-    //                 file_content = read_from_USBs(usb1_file_path,usb1,NULL);
-    //                 write_to_USBs(NULL, usb2, file_path, file_content);
-    //                 free(file_content);
-    //             }
-    //             // If the file path is a directory, create the directory in USB2.
-    //             else
-    //             {
-    //                 create_dir_in_USBs(file_path, NULL, usb2);
-    //             }
-    //         }
-    //     }
-
-    //     // Synchronize files from USB2 to USB1.
-    //     for (int j = 0; j < usb2_file_count_before_sync; j++)
-    //     {
-    //         if (strcmp(usb2->file_paths[j], file_path) == 0)
-    //         {
-    //             printf("Synchronizing %s to %s\n", file_path, usb1->mount_path);
-    //             char usb2_file_path[MAX_FILE_PATH_LENGTH];
-    //             sprintf(usb2_file_path, "%s%s", usb2->mount_path, file_path);
-
-    //             // If the file path is a file, read its content and write it to USB1.
-    //             if (strchr(file_path, '.') != NULL)
-    //             {
-    //                 file_content = read_from_USBs(usb1_file_path,NULL,usb2);
-    //                 write_to_USBs(usb1, NULL, file_path, file_content);
-    //                 free(file_content);
-    //             }
-    //             // If the file path is a directory, create the directory in USB1.
-    //             else
-    //             {
-    //                 create_dir_in_USBs(file_path, usb1, NULL);
-    //             }
-    //         }
-    //     }
+    //     printf("usb1 path: %s\n", usb1->file_paths[i]);
     // }
+    // for (int i = 0; i < usb2->file_count; i++)
+    // {
+    //     printf("usb2 path: %s\n", usb2->file_paths[i]);
+    // }
+
+    // Get the unique paths from USB1 and USB2 that need to be synchronized.
+    get_unique_paths(usb1, usb2, unique_paths, unique_path_count);
+    printf("%d unique paths to be synchronized\n", *unique_path_count);
+
+    // Iterate through the unique files and synchronize them.
+    for (int i = 0; i < *unique_path_count; i++)
+    {
+        synchronized = 0; // mark the current file or directory synchronized
+        memset(file_path, '\0', MAX_FILE_PATH_LENGTH);
+        strcpy(file_path, unique_paths[i]);
+
+        // Synchronize files from USB1 to USB2.
+        for (int j = 0; j < usb1->file_count; j++)
+        {
+            if (strcmp(usb1->file_paths[j], file_path) == 0)
+            {
+                printf("Synchronizing %s to %s\n", file_path, usb2->mount_path);
+                // If the file path is a file, read its content and write it to USB2.
+                if (strchr(file_path, '.') != NULL)
+                {
+                    file_content = read_from_USBs(file_path, usb1, NULL);
+                    write_to_USBs(NULL, usb2, file_path, file_content);
+                    free(file_content);
+                }
+                // If the file path is a directory, create the directory in USB2.
+                else
+                {
+                    create_dir_in_USBs(file_path, NULL, usb2);
+                }
+                synchronized = 1;
+                break;
+            }
+        }
+        // If the file path is found in usb1, continue to the next unique file
+        if (synchronized == 1)
+        {
+            continue;
+        }
+        // Synchronize files from USB2 to USB1.
+        for (int j = 0; j < usb2->file_count; j++)
+        {
+            if (strcmp(usb2->file_paths[j], file_path) == 0)
+            {
+                printf("Synchronizing %s to %s\n", file_path, usb1->mount_path);
+
+                // If the file path is a file, read its content and write it to USB1.
+                if (strchr(file_path, '.') != NULL)
+                {
+                    file_content = read_from_USBs(file_path, NULL, usb2);
+                    write_to_USBs(usb1, NULL, file_path, file_content);
+                    free(file_content);
+                }
+                // If the file path is a directory, create the directory in USB1.
+                else
+                {
+                    create_dir_in_USBs(file_path, usb1, NULL);
+                }
+                synchronized = 1;
+                break;
+            }
+        }
+    }
 
     // Set the mutexes for USB1 and USB2 as available and signal waiting threads.
     access_available_usb1 = 1;
@@ -770,8 +755,8 @@ char *read_from_USBs(const char *file_path, usb_t *usb1, usb_t *usb2)
     check_USB_connections(usb1, usb2);
     if (usb1_exist == -1 && usb2_exist == -1)
     {
-        perror("No USB connected.\n");
-        return -1;
+        perror("No USB connected");
+        return NULL;
     }
     // TODO - add monitor
     if (usb1 != NULL && usb2 != NULL)
@@ -809,7 +794,7 @@ char *read_from_USBs(const char *file_path, usb_t *usb1, usb_t *usb2)
 
     if (file_content == NULL)
     {
-        perror("read_from_USBs error -> No file found\n");
+        perror("read_from_USBs error");
     }
     if (usb1 != NULL && usb2 != NULL)
     {
@@ -830,7 +815,7 @@ char *get_info_from_USBs(const char *file_path, usb_t *usb1, usb_t *usb2)
     check_USB_connections(usb1, usb2);
     if (usb1_exist == -1 && usb2_exist == -1)
     {
-        perror("No USB connected.\n");
+        perror("No USB connected");
         return -1;
     }
     // TODO - add monitor
@@ -872,7 +857,7 @@ char *get_info_from_USBs(const char *file_path, usb_t *usb1, usb_t *usb2)
     }
     if (file_info == NULL)
     {
-        perror("get_info_from_USBs error -> No file found\n");
+        perror("get_info_from_USBs error");
     }
     if (usb1 != NULL && usb2 != NULL)
     {
@@ -880,7 +865,7 @@ char *get_info_from_USBs(const char *file_path, usb_t *usb1, usb_t *usb2)
     }
     if (file_info == NULL)
     {
-        perror("get_info_from_USBs error -> No file found\n");
+        perror("get_info_from_USBs error");
         return NULL;
     }
     else
@@ -902,7 +887,7 @@ int create_dir_in_USBs(const char *file_path, usb_t *usb1, usb_t *usb2)
     check_USB_connections(usb1, usb2);
     if (usb1_exist == -1 && usb2_exist == -1)
     {
-        perror("No USB connected.\n");
+        perror("No USB connected");
         return -1;
     }
 
@@ -941,7 +926,7 @@ int create_dir_in_USBs(const char *file_path, usb_t *usb1, usb_t *usb2)
 
     if (result == -1)
     {
-        perror("create_dir_in_USBs error: folder already exists");
+        perror("create_dir_in_USBs error");
     }
     if (usb1 != NULL && usb2 != NULL)
     {
