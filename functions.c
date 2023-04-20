@@ -246,8 +246,36 @@ char *get_info(const char *filename)
     return output;
 }
 
+int acquire_usb1_lock()
+{
+    // Lock the mutex for the USB1 monitor
+    pthread_mutex_lock(&pm_mutex_usb1);
+    // Wait until the USB1 monitor is available before acquiring the lock
+    while (!access_available_usb1)
+    {
+        pthread_cond_wait(&pm_cond_usb1, &pm_mutex_usb1);
+    }
+    // Set the access_available flag to indicate that the USB1 monitor is currently being used
+    access_available_usb1 = 0;
+    return 0;
+}
+
+int acquire_usb2_lock()
+{
+    // Lock the mutex for the USB2 monitor
+    pthread_mutex_lock(&pm_mutex_usb2);
+    // Wait until the USB2 monitor is available before acquiring the lock
+    while (!access_available_usb2)
+    {
+        pthread_cond_wait(&pm_cond_usb2, &pm_mutex_usb2);
+    }
+    // Set the access_available flag to indicate that the USB2 monitor is currently being used
+    access_available_usb2 = 0;
+    return 1;
+}
+
 /**
- * Manage the accessibility of the monitor
+ * Acquire a monitor randomly, at least one USB device is connected
  */
 int enter_available_monitor()
 {
@@ -255,62 +283,38 @@ int enter_available_monitor()
     srand(time(NULL));
     // Generate a random number between 0 and 1 using the rand() function
     int random_usb = rand() % 2;
-    // Check if the monitor for USB1 is available
-    if (usb1_exist == 0 && access_available_usb1)
+
+    // if both USB exist, check the preferred device availability, otherwise select the other available one
+    if (usb1_exist == 0 && usb2_exist == 0)
     {
-        // Lock the mutex for the USB1 monitor
-        pthread_mutex_lock(&pm_mutex_usb1);
-        // Wait until the USB1 monitor is available before acquiring the lock
-        while (!access_available_usb1)
+        if (random_usb == 0) // Prefer USB1
         {
-            pthread_cond_wait(&pm_cond_usb1, &pm_mutex_usb1);
+            if (access_available_usb1) // Trying to lock USB1 if available
+                return acquire_usb1_lock();
+            else if (access_available_usb2) // Trying to lock USB2 if USB1 not available
+                return acquire_usb2_lock();
+            else // Trying to lock USB1 if both not available
+                return acquire_usb1_lock();
         }
-        // Set the access_available flag to indicate that the USB1 monitor is currently being used
-        access_available_usb1 = 0;
-        return 0;
+        else // Prefer USB2
+        {
+            if (access_available_usb2) // Trying to lock USB2 if available
+                return acquire_usb2_lock();
+            else if (access_available_usb1) // Trying to lock USB1 if USB2 not available
+                return acquire_usb1_lock();
+            else // Trying to lock USB2 if both not available
+                return acquire_usb2_lock();
+        }
     }
-    // Check if the monitor for USB2 is available
-    else if (usb2_exist == 0 && access_available_usb2)
+
+    if (usb1_exist == 0)
     {
-        // Lock the mutex for the USB2 monitor
-        pthread_mutex_lock(&pm_mutex_usb2);
-        // Wait until the USB2 monitor is available before acquiring the lock
-        while (!access_available_usb2)
-        {
-            pthread_cond_wait(&pm_cond_usb2, &pm_mutex_usb2);
-        }
-        // Set the access_available flag to indicate that the USB2 monitor is currently being used
-        access_available_usb2 = 0;
-        return 1;
+        return acquire_usb1_lock();
     }
-    else
+
+    if (usb2_exist == 0)
     {
-        if (random_usb == 0)
-        {
-            // Lock the mutex for the USB1 monitor
-            pthread_mutex_lock(&pm_mutex_usb1);
-            // Wait until the USB1 monitor is available before acquiring the lock
-            while (!access_available_usb1)
-            {
-                pthread_cond_wait(&pm_cond_usb1, &pm_mutex_usb1);
-            }
-            // Set the access_available flag to indicate that the USB1 monitor is currently being used
-            access_available_usb1 = 0;
-            return 0;
-        }
-        else
-        {
-            // Lock the mutex for the USB2 monitor
-            pthread_mutex_lock(&pm_mutex_usb2);
-            // Wait until the USB2 monitor is available before acquiring the lock
-            while (!access_available_usb2)
-            {
-                pthread_cond_wait(&pm_cond_usb2, &pm_mutex_usb2);
-            }
-            // Set the access_available flag to indicate that the USB2 monitor is currently being used
-            access_available_usb2 = 0;
-            return 1;
-        }
+        return acquire_usb2_lock();
     }
 }
 
@@ -767,12 +771,14 @@ char *read_from_USBs(const char *file_path, usb_t *usb1, usb_t *usb2)
             char usb1_file_path[MAX_FILE_PATH_LENGTH];
             sprintf(usb1_file_path, "%s%s", usb1->mount_path, file_path);
             file_content = read_file_to_string(usb1_file_path);
+            printf("Trying to read content from USB1 ...\n");
         }
         else
         {
             char usb2_file_path[MAX_FILE_PATH_LENGTH];
             sprintf(usb2_file_path, "%s%s", usb2->mount_path, file_path);
             file_content = read_file_to_string(usb2_file_path);
+            printf("Trying to read content from USB2 ...\n");
         }
     }
     else
@@ -783,12 +789,14 @@ char *read_from_USBs(const char *file_path, usb_t *usb1, usb_t *usb2)
             char usb1_file_path[MAX_FILE_PATH_LENGTH];
             sprintf(usb1_file_path, "%s%s", usb1->mount_path, file_path);
             file_content = read_file_to_string(usb1_file_path);
+            printf("Trying to read content from USB1 ...\n");
         }
         else if (usb2_exist == 0 && usb2)
         {
             char usb2_file_path[MAX_FILE_PATH_LENGTH];
             sprintf(usb2_file_path, "%s%s", usb2->mount_path, file_path);
             file_content = read_file_to_string(usb2_file_path);
+            printf("Trying to read content from USB2 ...\n");
         }
     }
 
@@ -922,7 +930,7 @@ int create_dir_in_USBs(const char *file_path, usb_t *usb1, usb_t *usb2)
 
     if (result == -1)
     {
-        perror("create_dir_in_USBs error");
+        printf("create_dir_in_USBs error - folder exists\n");
     }
     if (usb1 != NULL && usb2 != NULL)
     {
@@ -979,8 +987,9 @@ void read_config_file(const char *filename, char usb1_mount_path[MAX_FILE_PATH_L
 
 char *concat_info_content(char *str1, char *str2)
 {
-    if (str1 == NULL || str2 == NULL) return NULL;
-    
+    if (str1 == NULL || str2 == NULL)
+        return NULL;
+
     // Get the length of the concatenated string
     size_t len1 = strlen(str1);
     size_t len2 = strlen(str2);
@@ -1001,10 +1010,12 @@ char *concat_info_content(char *str1, char *str2)
 
 /**
  * print unique paths
-*/
-void print_unique_paths(char unique_paths[MAX_FILE_COUNT][MAX_FILE_PATH_LENGTH], int unique_path_count) {
+ */
+void print_unique_paths(char unique_paths[MAX_FILE_COUNT][MAX_FILE_PATH_LENGTH], int unique_path_count)
+{
     printf("Unique paths:\n");
-    for (int i = 0; i < unique_path_count; i++) {
+    for (int i = 0; i < unique_path_count; i++)
+    {
         printf("%d: %s\n", i + 1, unique_paths[i]);
     }
 }
