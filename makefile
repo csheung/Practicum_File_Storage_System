@@ -1,10 +1,10 @@
 all: server client
 # all: server client server_file_manager
 
-server: functions.c  server.c
+server: functions.c  server.c functions.h
 	gcc server.c -o server
 
-client: functions.c client.c
+client: functions.c client.c functions.h
 	gcc client.c -o client
 
 # server_file_manager: functions.c server_file_manager.c
