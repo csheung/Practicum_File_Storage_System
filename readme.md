@@ -4,9 +4,9 @@ This project consists of a server and a client application that enable USB devic
 
 ## Overview
 
-The server application monitors the USB devices and performs synchronization tasks based on the client's commands. The client can send commands to the server to trigger various synchronization tasks, such as scanning the USB devices, synchronizing files and directories, and creating new files or directories in the USB devices.<br>
+The server application monitors the USB devices and performs file management and synchronization tasks based on the client's commands. The client can send commands to the server to trigger various tasks, such as getting files, querying file information, creating directories, uploading files, and deleting files or directories on the remote file system. Additionally, the server maintains a simple mirrored file system that writes information to two USB devices simultaneously.<br>
 
-The server uses a multi-threaded approach to handle multiple clients simultaneously, providing efficient and scalable synchronization services.<br>
+The server uses a multi-threaded approach to handle multiple clients simultaneously, providing efficient and scalable file management and synchronization services.<br>
 
 ## Features
 - Scan connected USB devices<br>
@@ -15,8 +15,8 @@ The server uses a multi-threaded approach to handle multiple clients simultaneou
 - Handle multiple clients simultaneously<br>
 
 ## Usage
-Execution: make<br>
-Clear executables: make clean<br>
+Compiling: make<br>
+Cleaning all executables and unused files: make clean<br>
 
 ### Server
 1. Compile the server application with the following command:
@@ -29,11 +29,13 @@ Clear executables: make clean<br>
 `gcc client.c -o client`
 2. Run the client application:
 `./client`
+
 3. Send commands to the server to request synchronization functions. Example commands:
-* SCAN: Scan connected USB devices
-* SYNC: Synchronize files and directories between USB devices
-* CREATE_FILE [file_path] [file_content]: Create a new file in the USB devices with the specified file path and content
-* CREATE_DIR [dir_path]: Create a new directory in the USB devices with the specified directory path
+* GET folder/foo.txt data/localfoo.txt: Get the remote file folder/foo.txt and save it as data/localfoo.txt on the local file system
+* INFO folder/foo.txt: Retrieve information about the remote file folder/foo.txt, such as ownership, date of last modification, permissions, and size
+* MD folder/newfolder: Create a new directory folder/newfolder in the remote file system
+* PUT local/afile.c folder/gfile.c: Upload the local file local/afile.c to the remote file system as folder/gfile.c
+* RM folder/somefile.txt: Delete the file or directory folder/somefile.txt in the remote file system
 
 To find the product ID and vendor ID of your USB device, you can use the following steps:<br>
 Open a terminal on your computer.<br>
@@ -41,3 +43,6 @@ Type the command lsusb and press Enter. This will display a list of all USB devi
 Find the entry for the USB device you are interested in. The entry will look something like this: Bus 002 Device 008: ID 0781:5567 SanDisk Corp. Cruzer Blade<br>
 Take note of the numbers after "ID". The first number is the vendor ID, and the second number is the product ID. In this example, the vendor ID is 0781 and the product ID is 5567.<br>
 
+
+### License
+This project is licensed under the MIT License. See the LICENSE file for more information.
