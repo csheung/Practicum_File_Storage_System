@@ -19,9 +19,6 @@ int socket_desc;
 struct sockaddr_in server_addr;
 char server_message[8196], server_message_copy[8196], client_message[8196], client_message_copy[8196];
 
-// char **args[];
-// int argCount = 0;
-
 int main(void)
 {
   // Get input from the user:
@@ -112,7 +109,6 @@ int main(void)
       {
         // read file by passing in client local path into content
         char *content = read_file_to_string(args[1]);
-        // printf("\nPUT command -> Content read from Client File: %s\n", content); // fot testing
 
         if (content)
         {
@@ -213,7 +209,7 @@ int main(void)
       {
         if (write_string_to_file(NULL, receivedArgs[2], receivedArgs[3]) == 0)
         {
-          printf("Success: Received content from server and wrote to file:\n %s\n", receivedArgs[3]);
+          printf("Success: Received content from server and wrote to file:\n%s\n", receivedArgs[3]);
         }
       }
       else if (strcmp(receivedArgs[1], "MD") == 0)
