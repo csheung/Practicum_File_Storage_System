@@ -816,7 +816,7 @@ char *get_info_from_USBs(const char *file_path, usb_t *usb1, usb_t *usb2)
     if (usb1_exist == -1 && usb2_exist == -1)
     {
         perror("No USB connected");
-        return -1;
+        return NULL;
     }
     // TODO - add monitor
     if (usb1 != NULL && usb2 != NULL)
@@ -851,19 +851,15 @@ char *get_info_from_USBs(const char *file_path, usb_t *usb1, usb_t *usb2)
         {
             char usb2_file_path[MAX_FILE_PATH_LENGTH];
             sprintf(usb2_file_path, "%s%s", usb2->mount_path, file_path);
-            file_content = read_file_to_string(usb2_file_path);
             file_info = get_info(usb2_file_path);
+            file_content = read_file_to_string(usb2_file_path);
         }
-    }
-    if (file_info == NULL)
-    {
-        perror("get_info_from_USBs error");
     }
     if (usb1 != NULL && usb2 != NULL)
     {
         release_monitor(monitor_acquired);
     }
-    if (file_info == NULL)
+    if (file_content == NULL)
     {
         perror("get_info_from_USBs error");
         return NULL;

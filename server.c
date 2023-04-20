@@ -147,11 +147,12 @@ void *connection_handler(void *client_sock)
   memset(client_message, '\0', sizeof(client_message));
 
   // Send welcome message to client:
-  sprintf(server_message, "Welcome to the server. Type 'esc' to quit.\n");
+  sprintf(server_message, "Welcome to the server. Type 'exit' to quit.\n");
   if (send(sock, server_message, strlen(server_message), 0) < 0)
   {
     printf("Can't send client the message!\n");
   }
+  memset(server_message, '\0', sizeof(server_message)); // clear the server welcome message
 
   while ((read_size = recv(sock, client_message, sizeof(client_message), 0)) > 0)
   {
