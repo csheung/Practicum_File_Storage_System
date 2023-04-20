@@ -980,7 +980,7 @@ void read_config_file(const char *filename, char usb1_mount_path[MAX_FILE_PATH_L
 char *concat_info_content(char *str1, char *str2)
 {
     if (str1 == NULL || str2 == NULL) return NULL;
-    
+
     // Get the length of the concatenated string
     size_t len1 = strlen(str1);
     size_t len2 = strlen(str2);

@@ -20,11 +20,11 @@ int main()
     usb_t usb1 = create_USB_struct();
     usb_t usb2 = create_USB_struct();
 
-    for (int i = 0; i < MAX_FILE_COUNT; i++)
-    {
-        memset(usb1.file_paths[i], '\0', MAX_FILE_PATH_LENGTH);
-        memset(usb2.file_paths[i], '\0', MAX_FILE_PATH_LENGTH);
-    }
+    // for (int i = 0; i < MAX_FILE_COUNT; i++)
+    // {
+    //     memset(usb1.file_paths[i], '\0', MAX_FILE_PATH_LENGTH);
+    //     memset(usb2.file_paths[i], '\0', MAX_FILE_PATH_LENGTH);
+    // }
     read_config_file("USB_config.txt", usb1.mount_path, usb2.mount_path);
 
     // Construct thread_args for testing
@@ -209,14 +209,17 @@ int main()
     // get_info_from_USBs -> background info plus content
     printf("Test get_info_from_USBs for path folder1/test_log.txt...\n");
     // get_info_from_USBs(&usb1, &usb2, "folder1/test_log.txt");
-    if (get_info_from_USBs(&usb1, &usb2, "folder1/test_log.txt") == NULL) {
-        printf("Check get_info_from_USBs. It returns NULL.\n");
+    if (get_info_from_USBs("folder1/test_log.txt", &usb1, &usb2) == NULL) {
+        printf("Error: Check get_info_from_USBs returns NULL.\n");
     };
     printf("Expect: INFO + Content for the path folder1/test_log.txt below\n");
 
     // get_info_from_USBs -> background info plus content
     printf("Test get_info_from_USBs for path folder2/folder3/test_log.txt...\n");
-    get_info_from_USBs(&usb1, &usb2, "folder2/folder3/test_log.txt");
+    // get_info_from_USBs("folder2/folder3/test_log.txt", &usb1, &usb2);
+    if (get_info_from_USBs("folder2/folder3/test_log.txt", &usb1, &usb2) == NULL) {
+        printf("Error: Check get_info_from_USBs returns NULL.\n");
+    };
     printf("Expect: INFO + Content for the path t2/folder2/folder3/test_log.txt below\n");
 
     // sychronize both USBs
@@ -231,7 +234,7 @@ int main()
     // test create_dir_in_USBs
     printf("\n--------- TEST 10 ---------\n");
     printf("Test create_dir_in_USBs\n");
-    if (create_dir_in_USBs("folder4/folder5/folder6", &usb1, &usb2) == 0) {
+    if (create_dir_in_USBs("folder4/folder5/folder6", &usb1, &usb2) != -1) {
         printf("Successfully create directories in USB\n");
     } else {
         printf("Failed to create directories in USB\n");
@@ -240,7 +243,10 @@ int main()
 
     // sychronize both USBs
     synchronize(&usb1, &usb2, bg_thread_args.unique_paths, bg_thread_args.unique_path_count);
-    
-    
+
+    // test file count in usb_t struct
+    printf("Reviewing file count for USBs updated by synthronize()...\n");
+    printf("usb1.file_count: %d, usb2.file_count: %d\n", usb1.file_count, usb2.file_count);
+
     return 0;
 }
