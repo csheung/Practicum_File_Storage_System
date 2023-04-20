@@ -30,11 +30,6 @@
 #define MAX_FILE_COUNT 100
 #define MAX_DIR_PATH_LENGTH 256
 #define MAX_DIR_COUNT 100
-
-// #define USB1_MOUNT_PATH "/Volumes/Sandisk/Practicum2/"
-// #define USB2_MOUNT_PATH "/Volumes/usb/Practicum2/"
-#define USB1_MOUNT_PATH "t1/"
-#define USB2_MOUNT_PATH "t2/"
 #define MOUNT_PATH_LENGTH 3
 
 typedef struct
