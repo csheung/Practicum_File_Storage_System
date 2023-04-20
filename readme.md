@@ -19,8 +19,21 @@ Execution: make<br>
 Clear executables: make clean<br>
 
 ### Server
+1. Compile the server application with the following command:
+`gcc server.c -o server -lpthread`
+2. Run the server application:
+`./server`
 
 ### Client
+1. Compile the client application with the following command:
+`gcc client.c -o client`
+2. Run the client application:
+`./client`
+3. Send commands to the server to request synchronization functions. Example commands:
+* SCAN: Scan connected USB devices
+* SYNC: Synchronize files and directories between USB devices
+* CREATE_FILE [file_path] [file_content]: Create a new file in the USB devices with the specified file path and content
+* CREATE_DIR [dir_path]: Create a new directory in the USB devices with the specified directory path
 
 To find the product ID and vendor ID of your USB device, you can use the following steps:<br>
 Open a terminal on your computer.<br>
