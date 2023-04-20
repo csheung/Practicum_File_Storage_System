@@ -6,6 +6,12 @@
     "cstring": "c",
     "socket.h": "c",
     "libusb.h": "c",
-    "pthread.h": "c"
+    "pthread.h": "c",
+    "dirent.h": "c",
+    "__bit_reference": "c",
+    "bitset": "c",
+    "unordered_map": "c",
+    "chrono": "c",
+    "sstream": "c"
   }
 }

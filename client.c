@@ -80,7 +80,8 @@ int main(void)
     memset(client_message_copy, '\0', sizeof(client_message_copy));
 
     printf("Enter message: ");
-    fgets(client_message, sizeof(client_message), stdin);
+    gets(client_message);
+    // fgets(client_message, sizeof(client_message), stdin);
 
     if (strcmp(client_message, "esc") == 0)
     {

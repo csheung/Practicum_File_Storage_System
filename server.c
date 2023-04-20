@@ -23,9 +23,9 @@ socklen_t client_size;
 struct sockaddr_in server_addr, client_addr;
 
 char unique_files[MAX_FILE_COUNT][MAX_FILE_PATH_LENGTH];
-int unique_files_count;
+int unique_files_count = 0;
 char unique_dirs[MAX_DIR_COUNT][MAX_DIR_PATH_LENGTH];
-int unique_dirs_count;
+int unique_dirs_count = 0;
 
 // Construct two usb_t for usb1 and usb2
 usb_t usb1;
@@ -33,7 +33,6 @@ usb_t usb2;
 
 void *connection_handler(void *);
 void process_request(char client_message_copy[8196], char client_message[8196], char server_message[8196]);
-void synchronize_();
 void *background_thread(void *arg);
 pthread_t bg_thread;
 
@@ -83,7 +82,21 @@ int main(void)
   printf("Waiting for incoming connections...\n");
 
   // Synchonize connected USBs
-  if (pthread_create(&bg_thread, NULL, background_thread, NULL) != 0)
+  thread_args bg_thread_args;
+  for (int i = 0; i < MAX_FILE_COUNT; i++)
+  {
+    memset(bg_thread_args.unique_files[i], '\0', MAX_FILE_PATH_LENGTH);
+    memset(bg_thread_args.unique_dirs[i], '\0', MAX_DIR_PATH_LENGTH);
+  }
+
+  // bg_thread_args.usb1 = &usb1;
+  // bg_thread_args.usb2 = &usb2;
+  // bg_thread_args.unique_files = unique_files;
+  // bg_thread_args.unique_files_count = &unique_files_count;
+  // bg_thread_args.unique_dirs = unique_dirs;
+  // bg_thread_args.unique_dirs_count = &unique_dirs_count;
+
+  if (pthread_create(&bg_thread, NULL, background_thread, (void *)bg_thread_args) != 0)
   {
     fprintf(stderr, "Error creating background thread\n");
     exit(EXIT_FAILURE);
@@ -274,20 +287,24 @@ void process_request(char client_message_copy[8196], char client_message[8196], 
   free(args);
 }
 
-// Synchronize function
-void synchronize_()
-{
-  printf("Synchronizing USB devices ... ");
-  // Do some synchronization work here
-}
-
 // Background thread function
-void *background_thread(void *arg)
+void *background_thread(void *args)
 {
+  int *unique_files_count = ((thread_args *)args)->unique_files_count;
+  int *unique_dirs_count = ((thread_args *)args)->unique_dirs_count;
+  usb_t *usb1 = ((thread_args *)args)->usb1;
+  usb_t *usb2 = ((thread_args *)args)->usb2;
+  char unique_files = ((thread_args *)args)->unique_files;
+  char unique_dirs = ((thread_args *)args)->unique_dirs;
+
   while (1)
   {
-    synchronize_();
-    sleep(5);
+
+    printf("Synchronizing USB devices ... \n");
+    synchronize(usb1, usb2, unique_files, unique_files_count, unique_dirs, unique_dirs_count);
+
+    // Do some synchronization work here
+    sleep(60);
   }
   return NULL;
 }
