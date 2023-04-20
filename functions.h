@@ -104,4 +104,6 @@ int create_dir_in_USBs(const char *file_path, usb_t *usb1, usb_t *usb2);
 // Concatenate Info and Content of a file
 char *concat_info_content(char *str1, char *str2);
 
+void print_unique_paths(char unique_paths[MAX_FILE_COUNT][MAX_FILE_PATH_LENGTH], int unique_path_count);
+
 #endif // FUNCTIONS_H
