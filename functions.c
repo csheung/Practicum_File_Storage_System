@@ -108,7 +108,7 @@ int write_string_to_file(usb_t *usb, char filename[MAX_FILE_PATH_LENGTH], const 
     char curr_dir[256];
     char *directory = dirname((char *)file_path);
     char *dir = strtok(directory, "/");
-    if (use_physical_device)
+    if (use_physical_device && usb != NULL)
         strcpy(curr_dir, "/"); // USB device from root folder
     else
     {
@@ -124,10 +124,10 @@ int write_string_to_file(usb_t *usb, char filename[MAX_FILE_PATH_LENGTH], const 
         strcat(curr_dir, "/");
         dir = strtok(NULL, "/");
     }
-    fp = fopen(file_path, "w"); // open the file in write mode
+
+    fp = fopen(filename, "w"); // open the file in write mode
     if (!fp)
     {
-        printf("Failed to open the file.\n");
         return -1;
     }
 
@@ -174,7 +174,7 @@ int create_directory(usb_t *usb, char file_path[MAX_FILE_PATH_LENGTH])
     int status;
     char curr_dir[256];
     char *dir = strtok((char *)path, "/");
-    if (use_physical_device)
+    if (use_physical_device && usb != NULL)
     {
         strcpy(curr_dir, "/"); // USB device from root folder
     }
