@@ -37,7 +37,19 @@ Cleaning all executables and unused files: make clean<br>
 2. Run the client application:
 `./client`
 
-3. Send commands to the server to request synchronization functions. Example commands:
+### Tests
+To test the program, run the following commands:
+
+### client_test.c
+3. Test individual functions with the ctest executable:
+`./ctest`
+
+### test_multithreads.c
+4. Test multithreading with the thread executable:
+`./thread`
+
+### Commands
+5. Send commands to the server to request synchronization functions. Example commands:
 * GET folder/foo.txt data/localfoo.txt: Get the remote file folder/foo.txt and save it as data/localfoo.txt on the local file system
 * INFO folder/foo.txt: Retrieve information about the remote file folder/foo.txt, such as ownership, date of last modification, permissions, and size
 * MD folder/newfolder: Create a new directory folder/newfolder in the remote file system
@@ -50,6 +62,21 @@ Type the command lsusb and press Enter. This will display a list of all USB devi
 Find the entry for the USB device you are interested in. The entry will look something like this: Bus 002 Device 008: ID 0781:5567 SanDisk Corp. Cruzer Blade<br>
 Take note of the numbers after "ID". The first number is the vendor ID, and the second number is the product ID. In this example, the vendor ID is 0781 and the product ID is 5567.<br>
 
+## Testing
+The provided test programs (client_test.c and test_multithreads.c) cover a variety of test cases to ensure that the program's functionalities work as expected.
+
+1. client_test.c tests all the functions independently and verifies their correct behavior.
+
+2. test_multithreads.c tests the following scenarios:
+- Test multi-threading with MD (Make Directory) commands.
+- Test multi-threading with PUT (Upload File) commands.
+- Test multi-threading with GET (Download File) commands.
+- Test multi-threading with INFO (File Information) commands.
+- Test multi-threading with RM (Remove File) commands.
+- Test multi-threading with multiple different commands.
+- Test parallel reading from multiple threads using GET commands.
+
+These tests aim to confirm that the program's functions work correctly under multi-threaded and concurrent scenarios. The test program provides output for each test case, indicating whether the commands executed successfully.
 
 ### License
 This project is licensed under the MIT License. See the LICENSE file for more information.
