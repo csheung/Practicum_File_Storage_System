@@ -30,7 +30,7 @@
 #define MAX_FILE_COUNT 100
 #define MAX_DIR_PATH_LENGTH 256
 #define MAX_DIR_COUNT 100
-#define MOUNT_PATH_LENGTH 3
+#define use_physical_device 1
 
 typedef struct
 {
@@ -51,13 +51,13 @@ typedef struct
 char *read_file_to_string(const char *filename);
 
 // Write a string to a file on the USB
-int write_string_to_file(usb_t *usb, const char *filename, const char *str);
+int write_string_to_file(usb_t *usb, char filename[MAX_FILE_PATH_LENGTH], const char *str);
 
 // Check if a path exists
 int path_exists(const char *path);
 
 // Create a directory on the USB
-int create_directory(usb_t *usb, const char *path);
+int create_directory(usb_t *usb, char path[MAX_FILE_PATH_LENGTH]);
 
 // Remove a file from the system
 int remove_file(const char *path);
@@ -69,7 +69,7 @@ char *get_info(const char *filename);
 usb_t create_USB_struct();
 
 // Write a file to both USBs
-int write_to_USBs(usb_t *usb1, usb_t *usb2, const char *file_path, const char *file_content);
+int write_to_USBs(usb_t *usb1, usb_t *usb2, char file_path[MAX_FILE_PATH_LENGTH], const char *file_content);
 
 // Remove a file path from the USB struct
 int remove_filepath_from_usb(usb_t *usb, const char *file_path);
@@ -99,7 +99,7 @@ char *read_from_USBs(const char *file_path, usb_t *usb1, usb_t *usb2);
 char *get_info_from_USBs(const char *file_path, usb_t *usb1, usb_t *usb2);
 
 // Create a directory in both USBs
-int create_dir_in_USBs(const char *file_path, usb_t *usb1, usb_t *usb2);
+int create_dir_in_USBs(char file_path[MAX_FILE_PATH_LENGTH], usb_t *usb1, usb_t *usb2);
 
 // Concatenate Info and Content of a file
 char *concat_info_content(char *str1, char *str2);

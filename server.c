@@ -41,7 +41,14 @@ int main(void)
   // Initialize two devices and set up with config
   usb1 = create_USB_struct();
   usb2 = create_USB_struct();
-  read_config_file("USB_config.txt", usb1.mount_path, usb2.mount_path);
+  if (use_physical_device)
+  {
+    read_config_file("physical_USB_config.txt", usb1.mount_path, usb2.mount_path);
+  }
+  else
+  {
+    read_config_file("USB_config.txt", usb1.mount_path, usb2.mount_path);
+  }
 
   client_size = sizeof(client_addr);
   int opt = 1;
