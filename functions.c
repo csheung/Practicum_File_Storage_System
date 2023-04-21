@@ -119,7 +119,6 @@ int write_string_to_file(usb_t *usb, char filename[MAX_FILE_PATH_LENGTH], const 
         strcat(curr_dir, dir);
         if (access(curr_dir, F_OK) == -1)
         {
-            // printf("cur_dir %s\n", curr_dir);
             mkdir(curr_dir, 0777);
         }
         strcat(curr_dir, "/");
@@ -167,28 +166,30 @@ int create_directory(usb_t *usb, char file_path[MAX_FILE_PATH_LENGTH])
     // handle error for dir already existed
     if (path_exists(path))
     {
-        // printf("Path already exists: %s\n", path);
+        printf("Path already exists: %s\n", path);
         return -1;
     }
-    char path_copy[MAX_FILE_PATH_LENGTH];
-    strcpy(path_copy, path);
+
     // strtok to handle multiple directories
-    char *dir = strtok((char *)path_copy, "/");
     int status;
     char curr_dir[256];
+    char *dir = strtok((char *)path, "/");
     if (use_physical_device)
+    {
         strcpy(curr_dir, "/"); // USB device from root folder
+    }
     else
     {
         strcpy(curr_dir, "");
     }
+
     while (dir != NULL)
     {
+
         strcat(curr_dir, dir);
         // 0777 sets the read, write, and execute permissions for the owner, and read and execute permissions for the group and others.
         if (access(curr_dir, F_OK) == -1)
         {
-            printf("cur_dir %s\n", curr_dir);
             status = mkdir(curr_dir, 0777);
         }
         strcat(curr_dir, "/");
@@ -586,9 +587,11 @@ void get_unique_paths(usb_t *usb1, usb_t *usb2, char unique_paths[MAX_FILE_COUNT
     // Find unique files from usb1 compared to usb2
     for (int i = 0; i < usb1->file_count; i++)
     {
+        // printf("usb1 file path %s \n", usb1->file_paths[i]);
         bool exists = false;
         for (int j = 0; j < usb2->file_count; j++)
         {
+            // printf("usb2 file path %s \n", usb2->file_paths[i]);
             if (strcmp(usb1->file_paths[i], usb2->file_paths[j]) == 0)
             {
                 exists = true;
@@ -680,7 +683,7 @@ int synchronize(usb_t *usb1, usb_t *usb2, char unique_paths[MAX_FILE_COUNT][MAX_
     char *file_content;
     int synchronized = 0;
 
-    // DEBUG -- Print all scanned files
+    // DEBUG-- Print all scanned files
     // for (int i = 0; i < usb1->file_count; i++)
     // {
     //     printf("usb1 path: %s\n", usb1->file_paths[i]);
@@ -924,14 +927,12 @@ int create_dir_in_USBs(char file_path[MAX_FILE_PATH_LENGTH], usb_t *usb1, usb_t 
         monitor_acquired = enter_available_monitor();
         if (monitor_acquired == 0)
         {
-            char usb1_file_path[MAX_FILE_PATH_LENGTH];
-            sprintf(usb1_file_path, "%s%s", usb1->mount_path, file_path);
+
             result = create_directory(usb1, file_path);
         }
         else
         {
-            char usb2_file_path[MAX_FILE_PATH_LENGTH];
-            sprintf(usb2_file_path, "%s%s", usb2->mount_path, file_path);
+
             result = create_directory(usb2, file_path);
         }
     }
@@ -939,15 +940,13 @@ int create_dir_in_USBs(char file_path[MAX_FILE_PATH_LENGTH], usb_t *usb1, usb_t 
     { // Monitor acquired already by background thread - synchronize()
         if (usb1_exist == 0 && usb1)
         {
-            char usb1_file_path[MAX_FILE_PATH_LENGTH];
-            sprintf(usb1_file_path, "%s%s", usb1->mount_path, file_path);
-            result = create_directory(usb1, usb1_file_path);
+
+            result = create_directory(usb1, file_path);
         }
         if (usb2_exist == 0 && usb2)
         {
-            char usb2_file_path[MAX_FILE_PATH_LENGTH];
-            sprintf(usb2_file_path, "%s%s", usb2->mount_path, file_path);
-            result = create_directory(usb2, usb2_file_path);
+
+            result = create_directory(usb2, file_path);
         }
     }
 

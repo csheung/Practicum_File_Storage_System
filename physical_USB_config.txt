@@ -1,3 +1,3 @@
 USB1_MOUNT_PATH=/Volumes/Sandisk/Practicum2/
-USB2_MOUNT_PATH=/Volumes/Sandisk/Practicum3/
+USB2_MOUNT_PATH=/Volumes/USBTaiDian/Practicum2/
  
