@@ -20,11 +20,6 @@ int main()
     usb_t usb1 = create_USB_struct();
     usb_t usb2 = create_USB_struct();
 
-    // for (int i = 0; i < MAX_FILE_COUNT; i++)
-    // {
-    //     memset(usb1.file_paths[i], '\0', MAX_FILE_PATH_LENGTH);
-    //     memset(usb2.file_paths[i], '\0', MAX_FILE_PATH_LENGTH);
-    // }
     read_config_file("USB_config.txt", usb1.mount_path, usb2.mount_path);
 
     // Construct thread_args for testing
@@ -50,10 +45,13 @@ int main()
     printf("--------- TEST 1 ---------\n");
     printf("Test read file from USB(s)...\n");
     char *temp_str;
-    if ((temp_str = read_file_to_string("a.txt")) != NULL) {
+    if ((temp_str = read_file_to_string("a.txt")) != NULL)
+    {
         printf("Successfully read content from read_file_to_string function.\n");
         printf("File content: %s\n", temp_str);
-    } else {
+    }
+    else
+    {
         printf("CANNOT read the file content. Check your read_file_to_string function.\n");
     }
     // sychronize both USBs
@@ -68,8 +66,7 @@ int main()
     // Expect: new file "abc.txt" with the same content as "a.txt" is written to both USBs
 
     // file count will be handled by scan_usb, synchronize and list_files
-    // printf("%d %d\n", usb1.file_count, usb2.file_count); 
-
+    // printf("%d %d\n", usb1.file_count, usb2.file_count);
 
     // --------- TEST 3 ---------
     // Test remove_file_from_USBs
@@ -83,19 +80,20 @@ int main()
     synchronize(&usb1, &usb2, bg_thread_args.unique_paths, bg_thread_args.unique_path_count);
 
     // file count will be handled by scan_usb, synchronize and list_files
-    // printf("%d %d\n", usb1.file_count, usb2.file_count);     
-
+    // printf("%d %d\n", usb1.file_count, usb2.file_count);
 
     // path_exists
     // --------- TEST 4 ---------
     printf("\n--------- TEST 4 ---------\n");
     printf("Test if path_exists works...\n");
-    if (path_exists("t1/test_log.txt") == 1) {
+    if (path_exists("t1/test_log.txt") == 1)
+    {
         printf("t1/a.txt is found. Successfully called path_exists function.\n");
-    } else {
+    }
+    else
+    {
         printf("Path is NOT found. Check your path_exists function.\n");
     }
-    
 
     // --------- TEST 5a ---------
     printf("\n--------- TEST 5a ---------\n");
@@ -111,21 +109,25 @@ int main()
     // sychronize both USBs
     synchronize(&usb1, &usb2, bg_thread_args.unique_paths, bg_thread_args.unique_path_count);
 
-
     // --------- TEST 5b ---------
     // test create_directory
     printf("\n--------- TEST 5b ---------\n");
     // check if log.txt exists
-    if (read_file_to_string("log.txt") != NULL) {
+    if (read_file_to_string("log.txt") != NULL)
+    {
         printf("Successfully read content from read_file_to_string function.\n");
-    } else {
+    }
+    else
+    {
         FILE *file = fopen("log.txt", "w");
-        if (file == NULL) {
+        if (file == NULL)
+        {
             perror("Error opening log.txt file for writing");
             return 1;
         }
         int write_status = fputs("This is a log file for testing...", file);
-        if (write_status == EOF) {
+        if (write_status == EOF)
+        {
             perror("Error writing content to file log.txt");
             fclose(file);
         }
@@ -137,7 +139,6 @@ int main()
     write_to_USBs(&usb1, &usb2, "test_log.txt", read_file_to_string("log.txt"));
     printf("Expect: test_log.txt is created and written with log.txt content\n");
 
-
     printf("Writing file test_log1.txt with content read from test_log.txt\n");
     write_to_USBs(&usb1, &usb2, "test_log1.txt", read_file_to_string("test_log.txt"));
     printf("Writing file test_log1.txt\n");
@@ -145,7 +146,6 @@ int main()
 
     // sychronize both USBs
     synchronize(&usb1, &usb2, bg_thread_args.unique_paths, bg_thread_args.unique_path_count);
-
 
     // --------- TEST 6 ---------
     // test remove_file
@@ -159,16 +159,17 @@ int main()
     // sychronize both USBs
     synchronize(&usb1, &usb2, bg_thread_args.unique_paths, bg_thread_args.unique_path_count);
 
-
     // --------- TEST 7a ---------
     // Test concat_info_content() for subsequent get_unique_paths()
     printf("\n--------- TEST 7a ---------\n");
-    if (concat_info_content("Hello", "World!") != NULL) {
+    if (concat_info_content("Hello", "World!") != NULL)
+    {
         printf("Test concat_info_content() and expect to get 'Hello$$World'!: %s...\n", concat_info_content("Hello ", "World!"));
-    } else {
+    }
+    else
+    {
         printf("Error: concat_info_content() returns NULL.\n");
     }
-
 
     // --------- TEST 7b ---------
     // Test get_unique_paths()
@@ -182,7 +183,6 @@ int main()
 
     // sychronize both USBs
     synchronize(&usb1, &usb2, bg_thread_args.unique_paths, bg_thread_args.unique_path_count);
-
 
     // --------- TEST 8 & 9 ---------
     // test get_info && get_info_from_USBs
@@ -202,14 +202,14 @@ int main()
     // sychronize both USBs
     synchronize(&usb1, &usb2, bg_thread_args.unique_paths, bg_thread_args.unique_path_count);
 
-
     // test get_info_from_USBs
     printf("\n--------- TEST 9 ---------\n");
     printf("Get background info from USBs\n");
     // get_info_from_USBs -> background info plus content
     printf("Test get_info_from_USBs for path folder1/test_log.txt...\n");
     // get_info_from_USBs(&usb1, &usb2, "folder1/test_log.txt");
-    if (get_info_from_USBs("folder1/test_log.txt", &usb1, &usb2) == NULL) {
+    if (get_info_from_USBs("folder1/test_log.txt", &usb1, &usb2) == NULL)
+    {
         printf("Error: Check get_info_from_USBs returns NULL.\n");
     };
     printf("Expect: INFO + Content for the path folder1/test_log.txt below\n");
@@ -217,7 +217,8 @@ int main()
     // get_info_from_USBs -> background info plus content
     printf("Test get_info_from_USBs for path folder2/folder3/test_log.txt...\n");
     // get_info_from_USBs("folder2/folder3/test_log.txt", &usb1, &usb2);
-    if (get_info_from_USBs("folder2/folder3/test_log.txt", &usb1, &usb2) == NULL) {
+    if (get_info_from_USBs("folder2/folder3/test_log.txt", &usb1, &usb2) == NULL)
+    {
         printf("Error: Check get_info_from_USBs returns NULL.\n");
     };
     printf("Expect: INFO + Content for the path t2/folder2/folder3/test_log.txt below\n");
@@ -229,14 +230,16 @@ int main()
     printf("Reviewing file count for USBs updated by synthronize()...\n");
     printf("usb1.file_count: %d, usb2.file_count: %d\n", usb1.file_count, usb2.file_count);
 
-
     // --------- TEST 10 ---------
     // test create_dir_in_USBs
     printf("\n--------- TEST 10 ---------\n");
     printf("Test create_dir_in_USBs\n");
-    if (create_dir_in_USBs("folder4/folder5/folder6", &usb1, &usb2) != -1) {
+    if (create_dir_in_USBs("folder4/folder5/folder6", &usb1, &usb2) != -1)
+    {
         printf("Successfully create directories in USB\n");
-    } else {
+    }
+    else
+    {
         printf("Failed to create directories in USB\n");
     }
     printf("Expect: directories folder4, folder5, folder6 are constructed\n");
