@@ -30,7 +30,7 @@
 #define MAX_FILE_COUNT 100
 #define MAX_DIR_PATH_LENGTH 256
 #define MAX_DIR_COUNT 100
-#define use_physical_device 1
+#define use_physical_device 0
 
 typedef struct
 {

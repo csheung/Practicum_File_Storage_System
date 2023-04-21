@@ -50,7 +50,7 @@ int main()
     printf("--------- TEST 1 ---------\n");
     printf("Test read file from USB(s)...\n");
     char *temp_str;
-    if ((temp_str = read_file_to_string("a.txt")) != NULL) {
+    if ((temp_str = read_file_to_string("test_log.txt")) != NULL) {
         printf("Successfully read content from read_file_to_string function.\n");
         printf("File content: %s\n", temp_str);
     } else {
