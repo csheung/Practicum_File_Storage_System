@@ -91,92 +91,16 @@ int main() {
     int result; // pthread_create return value
 
 
-    // Test 1 multiple GET commands
-    printf("--------- TEST 1 ---------\n");
-    printf("Test multi-threading GET commands...\n");
-
-    // define all GET commands for testing
-    strcpy(c0, "GET folder1/test_log.txt local/root.txt");
-    strcpy(c1, "GET folder1/test_log.txt local/root.txt");
-    strcpy(c2, "GET folder2/folder3/test_log.txt local/root.txt");
-    strcpy(c3, "GET folder2/folder3/test_log.txt local/root.txt");
-    strcpy(c4, "GET folder2/folder3/test_log.txt local/root.txt");
-    // strcpy(c5, "GET folder2/folder3/test_log.txt local/root.txt");
-    // strcpy(c6, "GET folder2/folder3/test_log.txt local/root.txt");
-    // strcpy(c7, "GET folder2/folder3/test_log.txt local/root.txt");
-    // strcpy(c8, "GET folder2/folder3/test_log.txt local/root.txt");
-    // strcpy(c9, "GET folder2/folder3/test_log.txt local/root.txt");
-
-    // call pthread_create on GET commands
-    pthread_create(&threads[0], NULL, run_fget, (void *)c0);
-    pthread_create(&threads[1], NULL, run_fget, (void *)c1);
-    pthread_create(&threads[2], NULL, run_fget, (void *)c2);
-    pthread_create(&threads[3], NULL, run_fget, (void *)c3);
-    pthread_create(&threads[4], NULL, run_fget, (void *)c4);
-    // pthread_create(&threads[5], NULL, run_fget, (void *)c5);
-    // pthread_create(&threads[6], NULL, run_fget, (void *)c6);
-    // pthread_create(&threads[7], NULL, run_fget, (void *)c7);
-    // pthread_create(&threads[8], NULL, run_fget, (void *)c8);
-    // pthread_create(&threads[9], NULL, run_fget, (void *)c9);
-
-    for (i = 0; i < thread_count; i++) {
-        result = pthread_join(threads[i], NULL);
-        if (result)
-        {
-            printf("Error joining thread %d\n", i);
-            exit(-1);
-        }
-    }
-
-
-    // Test 2 INFO -- INFO command for all threads
-    printf("--------- TEST 2 ---------\n");
-    printf("Test multi-threading INFO commands...\n");
-
-    // define all INFO commands for testing
-    strcpy(c0, "INFO folder1/test_log.txt");
-    strcpy(c1, "INFO folder2/folder3/test_log.txt");
-    strcpy(c2, "INFO folder1/test_log.txt");
-    strcpy(c3, "INFO folder2/folder3/test_log.txt");
-    strcpy(c4, "INFO folder1/test_log.txt");
-    // strcpy(c5, "INFO folder1/test_log.txt");
-    // strcpy(c6, "INFO folder1/test_log.txt");
-    // strcpy(c7, "INFO folder2/folder3/test_log.txt");
-    // strcpy(c8, "INFO folder2/folder3/test_log.txt");
-    // strcpy(c9, "INFO folder2/folder3/test_log.txt");
-
-    // call pthread_create on INFO commands
-    pthread_create(&threads[0], NULL, run_fget, (void *)c0);
-    pthread_create(&threads[1], NULL, run_fget, (void *)c1);
-    pthread_create(&threads[2], NULL, run_fget, (void *)c2);
-    pthread_create(&threads[3], NULL, run_fget, (void *)c3);
-    pthread_create(&threads[4], NULL, run_fget, (void *)c4);
-    // pthread_create(&threads[5], NULL, run_fget, (void *)c5);
-    // pthread_create(&threads[6], NULL, run_fget, (void *)c6);
-    // pthread_create(&threads[7], NULL, run_fget, (void *)c7);
-    // pthread_create(&threads[8], NULL, run_fget, (void *)c8);
-    // pthread_create(&threads[9], NULL, run_fget, (void *)c9);
-
-    for (i = 0; i < thread_count; i++) {
-        result = pthread_join(threads[i], NULL);
-        if (result)
-        {
-            printf("Error joining thread %d\n", i);
-            exit(-1);
-        }
-    }
-
-
     // Test 3 MD -- MD command for all threads
-    printf("--------- TEST 3 ---------\n");
+    printf("\n--------- TEST 1 ---------\n");
     printf("Test multi-threading MD commands...\n");
 
     // define all MD commands for testing
     strcpy(c0, "MD folder1/folder7");
-    strcpy(c1, "MD folder7/folder8");
-    strcpy(c2, "MD folder7/folder9/folder10");
-    strcpy(c3, "MD folder2/folder11/folder12");
-    strcpy(c4, "MD folder2/folder13/folder14");
+    strcpy(c1, "MD folder1/folder8");
+    strcpy(c2, "MD folder1/folder9");
+    strcpy(c3, "MD folder2/folder9/folder10");
+    strcpy(c4, "MD folder2/folder11");
 
     // call pthread_create on MD commands
     pthread_create(&threads[0], NULL, run_fget, (void *)c0);
@@ -195,13 +119,13 @@ int main() {
     }
 
 
-    // Test 4 PUT -- PUT command for all threads
-    printf("--------- TEST 4 ---------\n");
+    // Test 2 PUT -- PUT command for all threads
+    printf("--------- TEST 2 ---------\n");
     printf("Test multi-threading PUT commands...\n");
 
     // define all PUT commands for testing
-    strcpy(c0, "PUT log.txt folder1/tmp.txt");
-    strcpy(c1, "PUT log.txt tmp.txt");
+    strcpy(c0, "PUT log.txt folder1/temp.txt");
+    strcpy(c1, "PUT log.txt folder2/folder3/test_log.txt");
     strcpy(c2, "PUT log.txt tmpa.txt");
     strcpy(c3, "PUT log.txt tmpb.txt");
     strcpy(c4, "PUT log.txt tmpc.txt");
@@ -221,63 +145,125 @@ int main() {
             exit(-1);
         }
     }
-    
+
+    printf("\n--------------------------------------------------\n");
+
+    // Test 3 multiple GET commands
+    printf("--------- TEST 3 ---------\n");
+    printf("Test multi-threading GET commands...\n");
+
+    // define all GET commands for testing
+    strcpy(c0, "GET folder1/test_log.txt local/root1.txt");
+    strcpy(c1, "GET folder1/test_log.txt local/root2.txt");
+    strcpy(c2, "GET folder2/folder3/test_log.txt local/root3.txt");
+    strcpy(c3, "GET folder2/folder3/test_log.txt local/root4.txt");
+    strcpy(c4, "GET folder2/folder3/test_log.txt local/root5.txt");
+
+    // call pthread_create on GET commands
+    pthread_create(&threads[0], NULL, run_fget, (void *)c0);
+    pthread_create(&threads[1], NULL, run_fget, (void *)c1);
+    pthread_create(&threads[2], NULL, run_fget, (void *)c2);
+    pthread_create(&threads[3], NULL, run_fget, (void *)c3);
+    pthread_create(&threads[4], NULL, run_fget, (void *)c4);
+
+    for (i = 0; i < thread_count; i++) {
+        result = pthread_join(threads[i], NULL);
+        if (result)
+        {
+            printf("Error joining thread %d\n", i);
+            exit(-1);
+        }
+    }
+
+    printf("\n--------------------------------------------------\n");
+
+    // Test 4 INFO -- INFO command for all threads
+    printf("--------- TEST 4 ---------\n");
+    printf("Test multi-threading INFO commands...\n");
+
+    // define all INFO commands for testing
+    strcpy(c0, "INFO folder1/test_log.txt");
+    strcpy(c1, "INFO folder2/folder3/test_log.txt");
+    strcpy(c2, "INFO folder1/test_log.txt");
+    strcpy(c3, "INFO folder2/folder3/test_log.txt");
+    strcpy(c4, "INFO folder1/test_log.txt");
+
+    // call pthread_create on INFO commands
+    pthread_create(&threads[0], NULL, run_fget, (void *)c0);
+    pthread_create(&threads[1], NULL, run_fget, (void *)c1);
+    pthread_create(&threads[2], NULL, run_fget, (void *)c2);
+    pthread_create(&threads[3], NULL, run_fget, (void *)c3);
+    pthread_create(&threads[4], NULL, run_fget, (void *)c4);
+
+    for (i = 0; i < thread_count; i++) {
+        result = pthread_join(threads[i], NULL);
+        if (result)
+        {
+            printf("Error joining thread %d\n", i);
+            exit(-1);
+        }
+    }
+
+    printf("\n--------------------------------------------------\n");
 
     // Test 5 RM -- RM command for all threads
     printf("--------- TEST 5 ---------\n");
     printf("Test multi-threading RM commands...\n");
 
-    // define different commands for testing
-    // c0 = "RM folder1/test_log.txt";
-    // c1 = "RM folder2/folder3/test_log.txt";
-    // c2 = "RM folder1/test_log.txt";
-    // c3 = "RM folder2/folder3/test_log.txt";
-    // c4 = "RM folder1/test_log.txt";
-    // c5 = "RM folder1/test_log.txt";
-    // c6 = "RM folder1/test_log.txt";
-    // c7 = "RM folder2/folder3/test_log.txt";
-    // c8 = "RM folder2/folder3/test_log.txt";
-    // c9 = "RM folder2/folder3/test_log.txt";
+    // define all RM commands for testing
+    strcpy(c0, "RM folder1/tmp.txt");
+    strcpy(c1, "RM tmp.txt");
+    strcpy(c2, "RM tmpa.txt");
+    strcpy(c3, "RM tmpb.txt");
+    strcpy(c4, "RM tmpc.txt");
+
+    // call pthread_create on RM commands
+    pthread_create(&threads[0], NULL, run_fget, (void *)c0);
+    pthread_create(&threads[1], NULL, run_fget, (void *)c1);
+    pthread_create(&threads[2], NULL, run_fget, (void *)c2);
+    pthread_create(&threads[3], NULL, run_fget, (void *)c3);
+    pthread_create(&threads[4], NULL, run_fget, (void *)c4);
+
+    for (i = 0; i < thread_count; i++) {
+        result = pthread_join(threads[i], NULL);
+        if (result)
+        {
+            printf("Error joining thread %d\n", i);
+            exit(-1);
+        }
+    }
+
+    printf("\n--------------------------------------------------\n");
 
 
-    // Test 6 Mixed -- different commands for threads
+    // Test 6 - Question 8 Parallel Read
     printf("--------- TEST 6 ---------\n");
-    printf("Test multi-threading mixed commands...\n");
-
-    // define different commands for testing
-    // c0 = "RM folder1/test_log.txt";
-    // c1 = "RM folder2/folder3/test_log.txt";
-    // c2 = "RM folder1/test_log.txt";
-    // c3 = "RM folder2/folder3/test_log.txt";
-    // c4 = "RM folder1/test_log.txt";
-    // c5 = "RM folder1/test_log.txt";
-    // c6 = "RM folder1/test_log.txt";
-    // c7 = "RM folder2/folder3/test_log.txt";
-    // c8 = "RM folder2/folder3/test_log.txt";
-    // c9 = "RM folder2/folder3/test_log.txt";
-
-
-    // Test 7 Mixed -- different commands for threads
-    printf("--------- TEST 7 ---------\n");
-    printf("Test multi-threading mixed commands...\n");
-
-    // define different commands for testing
-    // c0 = "RM folder1/test_log.txt";
-    // c1 = "RM folder2/folder3/test_log.txt";
-    // c2 = "RM folder1/test_log.txt";
-    // c3 = "RM folder2/folder3/test_log.txt";
-    // c4 = "RM folder1/test_log.txt";
-    // c5 = "RM folder1/test_log.txt";
-    // c6 = "RM folder1/test_log.txt";
-    // c7 = "RM folder2/folder3/test_log.txt";
-    // c8 = "RM folder2/folder3/test_log.txt";
-    // c9 = "RM folder2/folder3/test_log.txt";
-
-
-    // Test 8 - Question 8 Parallel Read
-    printf("--------- TEST 8 ---------\n");
     printf("Test Parallel Read...\n");
 
+    // define all GET commands with read_file_from_USBs for testing
+    strcpy(c0, "GET folder1/test_log.txt local/root.txt");
+    strcpy(c1, "GET folder1/test_log.txt local/root.txt");
+    strcpy(c2, "GET folder2/folder3/test_log.txt local/root.txt");
+    strcpy(c3, "GET folder2/folder3/test_log.txt local/root.txt");
+    strcpy(c4, "GET folder2/folder3/test_log.txt local/root.txt");
+
+    // call pthread_create on GET commands
+    pthread_create(&threads[0], NULL, run_fget, (void *)c0);
+    pthread_create(&threads[1], NULL, run_fget, (void *)c1);
+    pthread_create(&threads[2], NULL, run_fget, (void *)c2);
+    pthread_create(&threads[3], NULL, run_fget, (void *)c3);
+    pthread_create(&threads[4], NULL, run_fget, (void *)c4);
+
+    for (i = 0; i < thread_count; i++) {
+        result = pthread_join(threads[i], NULL);
+        if (result)
+        {
+            printf("Error joining thread %d\n", i);
+            exit(-1);
+        }
+    }
+
+    printf("\n--------------------------------------------------\n");
 
     return 0;
 }

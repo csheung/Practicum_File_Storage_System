@@ -305,7 +305,7 @@ int acquire_usb2_lock()
 int enter_available_monitor()
 {
     // Seed the random number generator with the current time
-    srand(time(NULL));
+    // srand(time(NULL));
     // Generate a random number between 0 and 1 using the rand() function
     int random_usb = rand() % 2;
 
