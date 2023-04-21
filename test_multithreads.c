@@ -81,13 +81,13 @@ int main() {
 
     // declare threads for subsequent tests
     int i;
-    int thread_count = 10;
+    int thread_count = 5;
     pthread_t threads[thread_count];
 
     // declare testing string commands
     int cmd_size = 256;
-    char c0[cmd_size], c1[cmd_size], c2[cmd_size], c3[cmd_size], c4[cmd_size], c5[cmd_size], c6[cmd_size], c7[cmd_size], c8[cmd_size], c9[cmd_size];
-    char *commands[] = {c0, c1, c2, c3, c4, c5, c6, c7, c8, c9}; // put defined commands into an array
+    char c0[cmd_size], c1[cmd_size], c2[cmd_size], c3[cmd_size], c4[cmd_size];
+    char *commands[] = {c0, c1, c2, c3, c4}; // put defined commands into an array
     int result; // pthread_create return value
 
 
@@ -98,23 +98,33 @@ int main() {
     // define all GET commands for testing
     strcpy(c0, "GET folder1/test_log.txt local/root.txt");
     strcpy(c1, "GET folder1/test_log.txt local/root.txt");
-    strcpy(c2, "GET folder1/test_log.txt local/root.txt");
-    strcpy(c3, "GET folder1/test_log.txt local/root.txt");
-    strcpy(c4, "GET folder1/test_log.txt local/root.txt");
-    strcpy(c5, "GET folder2/folder3/test_log.txt local/root.txt");
-    strcpy(c6, "GET folder2/folder3/test_log.txt local/root.txt");
-    strcpy(c7, "GET folder2/folder3/test_log.txt local/root.txt");
-    strcpy(c8, "GET folder2/folder3/test_log.txt local/root.txt");
-    strcpy(c9, "GET folder2/folder3/test_log.txt local/root.txt");
+    strcpy(c2, "GET folder2/folder3/test_log.txt local/root.txt");
+    strcpy(c3, "GET folder2/folder3/test_log.txt local/root.txt");
+    strcpy(c4, "GET folder2/folder3/test_log.txt local/root.txt");
+    // strcpy(c5, "GET folder2/folder3/test_log.txt local/root.txt");
+    // strcpy(c6, "GET folder2/folder3/test_log.txt local/root.txt");
+    // strcpy(c7, "GET folder2/folder3/test_log.txt local/root.txt");
+    // strcpy(c8, "GET folder2/folder3/test_log.txt local/root.txt");
+    // strcpy(c9, "GET folder2/folder3/test_log.txt local/root.txt");
 
     // call pthread_create on GET commands
+    pthread_create(&threads[0], NULL, run_fget, (void *)c0);
+    pthread_create(&threads[1], NULL, run_fget, (void *)c1);
+    pthread_create(&threads[2], NULL, run_fget, (void *)c2);
+    pthread_create(&threads[3], NULL, run_fget, (void *)c3);
+    pthread_create(&threads[4], NULL, run_fget, (void *)c4);
+    // pthread_create(&threads[5], NULL, run_fget, (void *)c5);
+    // pthread_create(&threads[6], NULL, run_fget, (void *)c6);
+    // pthread_create(&threads[7], NULL, run_fget, (void *)c7);
+    // pthread_create(&threads[8], NULL, run_fget, (void *)c8);
+    // pthread_create(&threads[9], NULL, run_fget, (void *)c9);
+
     for (i = 0; i < thread_count; i++) {
-        int result = pthread_create(&threads[i], NULL, run_fget, (void *)commands[i]);
-        if (result) {
-            fprintf(stderr, "Error: thread %d pthread_create returned code %d\n", i, result);
-            exit(1);
-        } else {
-            fprintf(stdout, "Successfully completed test 1 (GET commands) thread %d.\n", i);
+        result = pthread_join(threads[i], NULL);
+        if (result)
+        {
+            printf("Error joining thread %d\n", i);
+            exit(-1);
         }
     }
 
@@ -129,25 +139,32 @@ int main() {
     strcpy(c2, "INFO folder1/test_log.txt");
     strcpy(c3, "INFO folder2/folder3/test_log.txt");
     strcpy(c4, "INFO folder1/test_log.txt");
-    strcpy(c5, "INFO folder1/test_log.txt");
-    strcpy(c6, "INFO folder1/test_log.txt");
-    strcpy(c7, "INFO folder2/folder3/test_log.txt");
-    strcpy(c8, "INFO folder2/folder3/test_log.txt");
-    strcpy(c9, "INFO folder2/folder3/test_log.txt");
+    // strcpy(c5, "INFO folder1/test_log.txt");
+    // strcpy(c6, "INFO folder1/test_log.txt");
+    // strcpy(c7, "INFO folder2/folder3/test_log.txt");
+    // strcpy(c8, "INFO folder2/folder3/test_log.txt");
+    // strcpy(c9, "INFO folder2/folder3/test_log.txt");
 
-    // call pthread_create on GET commands
+    // call pthread_create on INFO commands
+    pthread_create(&threads[0], NULL, run_fget, (void *)c0);
+    pthread_create(&threads[1], NULL, run_fget, (void *)c1);
+    pthread_create(&threads[2], NULL, run_fget, (void *)c2);
+    pthread_create(&threads[3], NULL, run_fget, (void *)c3);
+    pthread_create(&threads[4], NULL, run_fget, (void *)c4);
+    // pthread_create(&threads[5], NULL, run_fget, (void *)c5);
+    // pthread_create(&threads[6], NULL, run_fget, (void *)c6);
+    // pthread_create(&threads[7], NULL, run_fget, (void *)c7);
+    // pthread_create(&threads[8], NULL, run_fget, (void *)c8);
+    // pthread_create(&threads[9], NULL, run_fget, (void *)c9);
+
     for (i = 0; i < thread_count; i++) {
-        int result = pthread_create(&threads[i], NULL, run_fget, (void *)commands[i]);
-        if (result) {
-            fprintf(stderr, "Error: thread %d pthread_create returned code %d\n", i, result);
-            exit(1);
-        } else {
-            fprintf(stdout, "Successfully completed test 2 (INFO commands) thread %d.\n", i);
+        result = pthread_join(threads[i], NULL);
+        if (result)
+        {
+            printf("Error joining thread %d\n", i);
+            exit(-1);
         }
     }
-
-    // 
-    pthread_create(&threads[0], NULL, run_fget, (void *)c0);
 
 
     // Test 3 MD -- MD command for all threads
@@ -155,16 +172,27 @@ int main() {
     printf("Test multi-threading MD commands...\n");
 
     // define all MD commands for testing
-    // c0 = "MD folder1/test_log.txt";
-    // c1 = "MD folder2/folder3/test_log.txt";
-    // c2 = "MD folder1/test_log.txt";
-    // c3 = "MD folder2/folder3/test_log.txt";
-    // c4 = "MD folder1/test_log.txt";
-    // c5 = "MD folder1/test_log.txt";
-    // c6 = "MD folder1/test_log.txt";
-    // c7 = "MD folder2/folder3/test_log.txt";
-    // c8 = "MD folder2/folder3/test_log.txt";
-    // c9 = "MD folder2/folder3/test_log.txt";
+    strcpy(c0, "MD folder1/folder7");
+    strcpy(c1, "MD folder7/folder8");
+    strcpy(c2, "MD folder7/folder9/folder10");
+    strcpy(c3, "MD folder2/folder11/folder12");
+    strcpy(c4, "MD folder2/folder13/folder14");
+
+    // call pthread_create on MD commands
+    pthread_create(&threads[0], NULL, run_fget, (void *)c0);
+    pthread_create(&threads[1], NULL, run_fget, (void *)c1);
+    pthread_create(&threads[2], NULL, run_fget, (void *)c2);
+    pthread_create(&threads[3], NULL, run_fget, (void *)c3);
+    pthread_create(&threads[4], NULL, run_fget, (void *)c4);
+
+    for (i = 0; i < thread_count; i++) {
+        result = pthread_join(threads[i], NULL);
+        if (result)
+        {
+            printf("Error joining thread %d\n", i);
+            exit(-1);
+        }
+    }
 
 
     // Test 4 PUT -- PUT command for all threads
@@ -172,17 +200,28 @@ int main() {
     printf("Test multi-threading PUT commands...\n");
 
     // define all PUT commands for testing
-    // c0 = "PUT folder1/test_log.txt";
-    // c1 = "PUT folder2/folder3/test_log.txt";
-    // c2 = "PUT folder1/test_log.txt";
-    // c3 = "PUT folder2/folder3/test_log.txt";
-    // c4 = "PUT folder1/test_log.txt";
-    // c5 = "PUT folder1/test_log.txt";
-    // c6 = "PUT folder1/test_log.txt";
-    // c7 = "PUT folder2/folder3/test_log.txt";
-    // c8 = "PUT folder2/folder3/test_log.txt";
-    // c9 = "PUT folder2/folder3/test_log.txt";
+    strcpy(c0, "PUT log.txt folder1/tmp.txt");
+    strcpy(c1, "PUT log.txt tmp.txt");
+    strcpy(c2, "PUT log.txt tmpa.txt");
+    strcpy(c3, "PUT log.txt tmpb.txt");
+    strcpy(c4, "PUT log.txt tmpc.txt");
 
+    // call pthread_create on PUT commands
+    pthread_create(&threads[0], NULL, run_fget, (void *)c0);
+    pthread_create(&threads[1], NULL, run_fget, (void *)c1);
+    pthread_create(&threads[2], NULL, run_fget, (void *)c2);
+    pthread_create(&threads[3], NULL, run_fget, (void *)c3);
+    pthread_create(&threads[4], NULL, run_fget, (void *)c4);
+
+    for (i = 0; i < thread_count; i++) {
+        result = pthread_join(threads[i], NULL);
+        if (result)
+        {
+            printf("Error joining thread %d\n", i);
+            exit(-1);
+        }
+    }
+    
 
     // Test 5 RM -- RM command for all threads
     printf("--------- TEST 5 ---------\n");
