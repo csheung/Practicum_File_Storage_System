@@ -1,6 +1,11 @@
-# USB Synchronization Server
+# CS5600 Practicum 2
 
 This project consists of a server and a client application that enable USB devices to be synchronized remotely. The server runs on a machine with USB devices connected, and the client sends commands to request synchronization functions.<br>
+
+## Authors
+Zhenyu Wang, Chun Sheung Ng
+
+2023 Apr 20
 
 ## Overview
 
@@ -13,6 +18,8 @@ The server uses a multi-threaded approach to handle multiple clients simultaneou
 - Synchronize files and directories between USB devices<br>
 - Create new files or directories in the USB devices<br>
 - Handle multiple clients simultaneously<br>
+- Use fget executable to run each command by establishing a connection thread to the server<br>
+- Use a high-level client to keep the connection and send as many as commands before manually exit<br>
 
 ## Usage
 Compiling: make<br>

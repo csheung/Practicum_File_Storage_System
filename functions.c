@@ -94,6 +94,7 @@ char *read_file_to_string(const char *filename)
  */
 int write_string_to_file(usb_t *usb, char filename[MAX_FILE_PATH_LENGTH], const char *str)
 {
+
     char file_path[MAX_FILE_PATH_LENGTH];
     if (usb == NULL)
     {
@@ -119,13 +120,14 @@ int write_string_to_file(usb_t *usb, char filename[MAX_FILE_PATH_LENGTH], const 
         strcat(curr_dir, dir);
         if (access(curr_dir, F_OK) == -1)
         {
+
             mkdir(curr_dir, 0777);
         }
         strcat(curr_dir, "/");
         dir = strtok(NULL, "/");
     }
 
-    fp = fopen(filename, "w"); // open the file in write mode
+    fp = fopen(file_path, "w"); // open the file in write mode
     if (!fp)
     {
         return -1;
@@ -426,7 +428,9 @@ int write_to_USBs(usb_t *usb1, usb_t *usb2, char file_path[MAX_FILE_PATH_LENGTH]
 
         if (usb2_exist == 0 && usb2) // USB2 is connected and instructed to write
         {
+            printf("file_path %s\n", file_path);
             result = write_string_to_file(usb2, file_path, file_content);
+            printf("write_string_to_file %d\n", result);
         }
     }
     if (result == -1)
@@ -695,12 +699,10 @@ int synchronize(usb_t *usb1, usb_t *usb2, char unique_paths[MAX_FILE_COUNT][MAX_
 
     // Get the unique paths from USB1 and USB2 that need to be synchronized.
     get_unique_paths(usb1, usb2, unique_paths, unique_path_count);
-    printf("%d unique paths to be synchronized\n", *unique_path_count);
-
+    printf("Count of unique paths: %d\n", *unique_path_count);
     // Iterate through the unique files and synchronize them.
     for (int i = 0; i < *unique_path_count; i++)
     {
-        printf("%s unique paths \n", unique_paths[i]);
 
         synchronized = 0; // mark the current file or directory synchronized
         memset(file_path, '\0', MAX_FILE_PATH_LENGTH);
@@ -716,6 +718,7 @@ int synchronize(usb_t *usb1, usb_t *usb2, char unique_paths[MAX_FILE_COUNT][MAX_
                 if (strchr(file_path, '.') != NULL)
                 {
                     file_content = read_from_USBs(file_path, usb1, NULL);
+                    printf("file content %s\n", file_content);
                     write_to_USBs(NULL, usb2, file_path, file_content);
                     free(file_content);
                 }

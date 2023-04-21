@@ -20,7 +20,14 @@ int main()
     usb_t usb1 = create_USB_struct();
     usb_t usb2 = create_USB_struct();
 
-    read_config_file("USB_config.txt", usb1.mount_path, usb2.mount_path);
+    if (use_physical_device)
+    {
+        read_config_file("physical_USB_config.txt", usb1.mount_path, usb2.mount_path);
+    }
+    else
+    {
+        read_config_file("USB_config.txt", usb1.mount_path, usb2.mount_path);
+    }
 
     // Construct thread_args for testing
     thread_args bg_thread_args;
@@ -63,6 +70,7 @@ int main()
     printf("Read file from USB(s) and Write to new file at the same space...\n");
     write_to_USBs(&usb1, &usb2, "abc.txt", read_file_to_string("a.txt"));
     printf("Written file abc.txt\n");
+    synchronize(&usb1, &usb2, bg_thread_args.unique_paths, bg_thread_args.unique_path_count);
     // Expect: new file "abc.txt" with the same content as "a.txt" is written to both USBs
 
     // file count will be handled by scan_usb, synchronize and list_files
@@ -139,11 +147,6 @@ int main()
     write_to_USBs(&usb1, &usb2, "test_log.txt", read_file_to_string("log.txt"));
     printf("Expect: test_log.txt is created and written with log.txt content\n");
 
-    printf("Writing file test_log1.txt with content read from test_log.txt\n");
-    write_to_USBs(&usb1, &usb2, "test_log1.txt", read_file_to_string("test_log.txt"));
-    printf("Writing file test_log1.txt\n");
-    printf("Expect: test_log1.txt is created and written with test_log.txt content\n");
-
     // sychronize both USBs
     synchronize(&usb1, &usb2, bg_thread_args.unique_paths, bg_thread_args.unique_path_count);
 
@@ -151,10 +154,10 @@ int main()
     // test remove_file
     printf("\n--------- TEST 6 ---------\n");
     printf("Test remove_file_from_USBs()\n");
-    printf("Remove file test_log1.txt added in Test 5...\n");
-    remove_file_from_USBs(&usb1, &usb2, "test_log1.txt");
-    printf("Read test_log1.txt after removing it from usb1: %s\n", read_from_USBs("test_log1.txt", &usb1, &usb2));
-    printf("Expect: Path not exists, so an error message should be printed.\n");
+    printf("Remove file test_log.txt added in Test 5...\n");
+    remove_file_from_USBs(&usb1, &usb2, "test_log.txt");
+    printf("Expectation for the following case: Path not exists, so an error message should be printed.\n");
+    printf("Read test_log.txt after removing it from usb1 \n", read_from_USBs("test_log.txt", &usb1, &usb2));
 
     // sychronize both USBs
     synchronize(&usb1, &usb2, bg_thread_args.unique_paths, bg_thread_args.unique_path_count);
@@ -164,7 +167,7 @@ int main()
     printf("\n--------- TEST 7a ---------\n");
     if (concat_info_content("Hello", "World!") != NULL)
     {
-        printf("Test concat_info_content() and expect to get 'Hello$$World'!: %s...\n", concat_info_content("Hello ", "World!"));
+        printf("Test concat_info_content() and expect to get 'Hello$$World'!: %s...\n", concat_info_content("Hello", "World!"));
     }
     else
     {
@@ -174,6 +177,7 @@ int main()
     // --------- TEST 7b ---------
     // Test get_unique_paths()
     printf("\n--------- TEST 7b ---------\n");
+    write_to_USBs(&usb1, &usb2, "b.txt", "test 7b content");
     printf("Test get_unique_paths() to find difference between USB1 and USB2...\n");
     // char unique_paths[MAX_FILE_COUNT][MAX_FILE_PATH_LENGTH];
     // int unique_path_count = 0;
@@ -234,7 +238,7 @@ int main()
     // test create_dir_in_USBs
     printf("\n--------- TEST 10 ---------\n");
     printf("Test create_dir_in_USBs\n");
-    if (create_dir_in_USBs("folder4/folder5/folder6", &usb1, &usb2) != -1)
+    if (create_dir_in_USBs("folder4/folder5/folder6", &usb1, &usb2) == 0)
     {
         printf("Successfully create directories in USB\n");
     }

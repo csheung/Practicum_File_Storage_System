@@ -14,7 +14,6 @@
 #include <pthread.h>
 #include "functions.c"
 
-
 // variablet multithreads
 const int NUM_THREADS = 5;
 pthread_t threads[NUM_THREADS];
@@ -28,9 +27,10 @@ int unique_path_count = 0;
  * @param void*     args
  * @return void
  */
-void *run_fget(void *arg) {
+void *run_fget(void *arg)
+{
     char command[256];
-    char *cmd_str = (char*)arg;
+    char *cmd_str = (char *)arg;
 
     // Create the command string to call the "fget" executable with the given argument
     snprintf(command, sizeof(command), "./fget %s", cmd_str);
@@ -38,17 +38,20 @@ void *run_fget(void *arg) {
     // Execute the command using the system() function
     int result = system(command);
 
-    if (result == -1) {
+    if (result == -1)
+    {
         perror("system");
-    } else {
+    }
+    else
+    {
         printf("Command executed successfully: %s\n", cmd_str);
     }
     return NULL;
 }
 
-
 /* main */
-int main() {
+int main()
+{
 
     // print configuration information for our program
     printf("-------------Configuring the heap-------------\n");
@@ -69,7 +72,7 @@ int main() {
     bg_thread_args.usb1 = &usb1;
     bg_thread_args.usb2 = &usb2;
     bg_thread_args.unique_path_count = &unique_path_count;
-    
+
     // Commands to test the five functionalities
     // commands[] = {
     //     "GET source_path destination_path",
@@ -88,8 +91,7 @@ int main() {
     int cmd_size = 256;
     char c0[cmd_size], c1[cmd_size], c2[cmd_size], c3[cmd_size], c4[cmd_size];
     char *commands[] = {c0, c1, c2, c3, c4}; // put defined commands into an array
-    int result; // pthread_create return value
-
+    int result;                              // pthread_create return value
 
     // Test 3 MD -- MD command for all threads
     printf("\n--------- TEST 1 ---------\n");
@@ -109,7 +111,8 @@ int main() {
     pthread_create(&threads[3], NULL, run_fget, (void *)c3);
     pthread_create(&threads[4], NULL, run_fget, (void *)c4);
 
-    for (i = 0; i < thread_count; i++) {
+    for (i = 0; i < thread_count; i++)
+    {
         result = pthread_join(threads[i], NULL);
         if (result)
         {
@@ -117,15 +120,14 @@ int main() {
             exit(-1);
         }
     }
-
-
+    sleep(4);
     // Test 2 PUT -- PUT command for all threads
     printf("--------- TEST 2 ---------\n");
     printf("Test multi-threading PUT commands...\n");
 
     // define all PUT commands for testing
-    strcpy(c0, "PUT log.txt folder1/temp.txt");
-    strcpy(c1, "PUT log.txt folder2/folder3/test_log.txt");
+    strcpy(c0, "PUT log.txt folder1/tmp.txt");
+    strcpy(c1, "PUT log.txt folder2/test_log.txt");
     strcpy(c2, "PUT log.txt tmpa.txt");
     strcpy(c3, "PUT log.txt tmpb.txt");
     strcpy(c4, "PUT log.txt tmpc.txt");
@@ -137,7 +139,8 @@ int main() {
     pthread_create(&threads[3], NULL, run_fget, (void *)c3);
     pthread_create(&threads[4], NULL, run_fget, (void *)c4);
 
-    for (i = 0; i < thread_count; i++) {
+    for (i = 0; i < thread_count; i++)
+    {
         result = pthread_join(threads[i], NULL);
         if (result)
         {
@@ -145,7 +148,7 @@ int main() {
             exit(-1);
         }
     }
-
+    sleep(4);
     printf("\n--------------------------------------------------\n");
 
     // Test 3 multiple GET commands
@@ -166,7 +169,8 @@ int main() {
     pthread_create(&threads[3], NULL, run_fget, (void *)c3);
     pthread_create(&threads[4], NULL, run_fget, (void *)c4);
 
-    for (i = 0; i < thread_count; i++) {
+    for (i = 0; i < thread_count; i++)
+    {
         result = pthread_join(threads[i], NULL);
         if (result)
         {
@@ -174,7 +178,7 @@ int main() {
             exit(-1);
         }
     }
-
+    sleep(4);
     printf("\n--------------------------------------------------\n");
 
     // Test 4 INFO -- INFO command for all threads
@@ -195,7 +199,8 @@ int main() {
     pthread_create(&threads[3], NULL, run_fget, (void *)c3);
     pthread_create(&threads[4], NULL, run_fget, (void *)c4);
 
-    for (i = 0; i < thread_count; i++) {
+    for (i = 0; i < thread_count; i++)
+    {
         result = pthread_join(threads[i], NULL);
         if (result)
         {
@@ -203,7 +208,7 @@ int main() {
             exit(-1);
         }
     }
-
+    sleep(4);
     printf("\n--------------------------------------------------\n");
 
     // Test 5 RM -- RM command for all threads
@@ -212,7 +217,7 @@ int main() {
 
     // define all RM commands for testing
     strcpy(c0, "RM folder1/tmp.txt");
-    strcpy(c1, "RM tmp.txt");
+    strcpy(c1, "RM folder2/test_log.txt");
     strcpy(c2, "RM tmpa.txt");
     strcpy(c3, "RM tmpb.txt");
     strcpy(c4, "RM tmpc.txt");
@@ -224,7 +229,8 @@ int main() {
     pthread_create(&threads[3], NULL, run_fget, (void *)c3);
     pthread_create(&threads[4], NULL, run_fget, (void *)c4);
 
-    for (i = 0; i < thread_count; i++) {
+    for (i = 0; i < thread_count; i++)
+    {
         result = pthread_join(threads[i], NULL);
         if (result)
         {
@@ -232,11 +238,13 @@ int main() {
             exit(-1);
         }
     }
-
+    sleep(4);
     printf("\n--------------------------------------------------\n");
 
-
-    // Test 6 - Question 8 Parallel Read
+    // Test 6 - Question 8 Parallel Read.
+    // Please read the server logs where says, which proves distributed read:
+    // "Trying to read content from USB1 .. "
+    // or Trying to read content from USB2 ..
     printf("--------- TEST 6 ---------\n");
     printf("Test Parallel Read...\n");
 
@@ -254,7 +262,8 @@ int main() {
     pthread_create(&threads[3], NULL, run_fget, (void *)c3);
     pthread_create(&threads[4], NULL, run_fget, (void *)c4);
 
-    for (i = 0; i < thread_count; i++) {
+    for (i = 0; i < thread_count; i++)
+    {
         result = pthread_join(threads[i], NULL);
         if (result)
         {
