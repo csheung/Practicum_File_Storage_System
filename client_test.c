@@ -9,6 +9,7 @@
 */
 
 #include "functions.c"
+#include <string.h>
 
 // create variables for testing purposes
 char unique_paths[MAX_FILE_COUNT][MAX_FILE_PATH_LENGTH];
@@ -50,7 +51,7 @@ int main()
     // Test read_file_to_string and write_to_USBs
     // a.txt should already exist in USB(s)
     printf("--------- TEST 1 ---------\n");
-    printf("Test read file from USB(s)...\n");
+    printf("Test write and read file from USB(s)...\n");
     char *temp_str;
     if ((temp_str = read_file_to_string("test_log.txt")) != NULL)
     {
@@ -68,7 +69,7 @@ int main()
     // Test read_file_to_string and write_to_USBs
     printf("--------- TEST 2 ---------\n");
     printf("Read file from USB(s) and Write to new file at the same space...\n");
-    write_to_USBs(&usb1, &usb2, "abc.txt", read_file_to_string("a.txt"));
+    write_to_USBs(&usb1, &usb2, "abc.txt", read_file_to_string("test_log.txt"));
     printf("Written file abc.txt\n");
     synchronize(&usb1, &usb2, bg_thread_args.unique_paths, bg_thread_args.unique_path_count);
     // Expect: new file "abc.txt" with the same content as "a.txt" is written to both USBs
@@ -94,9 +95,9 @@ int main()
     // --------- TEST 4 ---------
     printf("\n--------- TEST 4 ---------\n");
     printf("Test if path_exists works...\n");
-    if (path_exists("t1/test_log.txt") == 1)
+    if (path_exists("a.txt") == 1)
     {
-        printf("t1/a.txt is found. Successfully called path_exists function.\n");
+        printf("a.txt is found. Successfully called path_exists function.\n");
     }
     else
     {
@@ -194,21 +195,24 @@ int main()
     printf("Get background info from one USB\n");
 
     // get_info from usb1 -> only background info
-    printf("Testing get_info in usb1 t1/folder1/test_log.txt...\n");
-    printf("%s\n", get_info("t1/folder1/test_log.txt"));
-    printf("Expect: only the info printed for the path t1/folder1/test_log.txt\n");
+    char usb_file_path[MAX_FILE_PATH_LENGTH];
+    sprintf(usb_file_path, "%s%s", usb1.mount_path, "folder1/test_log.txt");
+    printf("Testing get_info in usb1 folder1/test_log.txt...\n");
+    printf("%s\n", get_info(usb_file_path));
+    printf("Expect: only the info printed for the path folder1/test_log.txt\n");
 
     // get_info from usb2 -> only background info
-    printf("Testing get_info in usb1 t2/folder2/folder3/test_log.txt...\n");
-    printf("%s\n", get_info("t2/folder2/folder3/test_log.txt"));
-    printf("Expect: only the info printed for the path t2/folder2/folder3/test_log.txt\n");
+    sprintf(usb_file_path, "%s%s", usb2.mount_path, "folder2/folder3/test_log.txt");
+    printf("Testing get_info in usb2 folder2/folder3/test_log.txt...\n");
+    printf("%s\n", get_info(usb_file_path));
+    printf("Expect: only the info printed for the path folder2/folder3/test_log.txt\n");
 
     // sychronize both USBs
     synchronize(&usb1, &usb2, bg_thread_args.unique_paths, bg_thread_args.unique_path_count);
 
     // test get_info_from_USBs
     printf("\n--------- TEST 9 ---------\n");
-    printf("Get background info from USBs\n");
+    printf("Get file info from USBs\n");
     // get_info_from_USBs -> background info plus content
     printf("Test get_info_from_USBs for path folder1/test_log.txt...\n");
     // get_info_from_USBs(&usb1, &usb2, "folder1/test_log.txt");
@@ -225,7 +229,7 @@ int main()
     {
         printf("Error: Check get_info_from_USBs returns NULL.\n");
     };
-    printf("Expect: INFO + Content for the path t2/folder2/folder3/test_log.txt below\n");
+    printf("Expect: INFO + Content for the path folder2/folder3/test_log.txt below\n");
 
     // sychronize both USBs
     synchronize(&usb1, &usb2, bg_thread_args.unique_paths, bg_thread_args.unique_path_count);

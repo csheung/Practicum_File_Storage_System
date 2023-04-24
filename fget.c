@@ -169,7 +169,7 @@ int main(int argc, char *argv[])
     //-------------- Switch the receivedCommand options -------------
     if (strcmp(receivedArgs[0], "ERROR") == 0) // ASK: If the remote file or path is omitted, use the values for the first argument.
     {
-        printf("Command error, please enter a new message.\n"); // print to be optimized
+        // printf("Command error, please enter a new message.\n"); // print to be optimized
     }
     else if (strcmp(receivedArgs[0], "EXIT") == 0)
     {

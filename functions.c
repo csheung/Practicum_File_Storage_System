@@ -428,9 +428,8 @@ int write_to_USBs(usb_t *usb1, usb_t *usb2, char file_path[MAX_FILE_PATH_LENGTH]
 
         if (usb2_exist == 0 && usb2) // USB2 is connected and instructed to write
         {
-            printf("file_path %s\n", file_path);
+
             result = write_string_to_file(usb2, file_path, file_content);
-            printf("write_string_to_file %d\n", result);
         }
     }
     if (result == -1)
@@ -859,6 +858,7 @@ char *get_info_from_USBs(const char *file_path, usb_t *usb1, usb_t *usb2)
         {
             char usb1_file_path[MAX_FILE_PATH_LENGTH];
             sprintf(usb1_file_path, "%s%s", usb1->mount_path, file_path);
+
             file_info = get_info(usb1_file_path);
             file_content = read_file_to_string(usb1_file_path);
             printf("Trying to get info from USB1 ...\n");
@@ -867,6 +867,7 @@ char *get_info_from_USBs(const char *file_path, usb_t *usb1, usb_t *usb2)
         {
             char usb2_file_path[MAX_FILE_PATH_LENGTH];
             sprintf(usb2_file_path, "%s%s", usb2->mount_path, file_path);
+
             file_info = get_info(usb2_file_path);
             file_content = read_file_to_string(usb2_file_path);
             printf("Trying to get info from USB2 ...\n");
@@ -879,6 +880,7 @@ char *get_info_from_USBs(const char *file_path, usb_t *usb1, usb_t *usb2)
         {
             char usb1_file_path[MAX_FILE_PATH_LENGTH];
             sprintf(usb1_file_path, "%s%s", usb1->mount_path, file_path);
+
             file_info = get_info(usb1_file_path);
             file_content = read_file_to_string(usb1_file_path);
             printf("Trying to get info from USB1 ...\n");
@@ -887,6 +889,7 @@ char *get_info_from_USBs(const char *file_path, usb_t *usb1, usb_t *usb2)
         {
             char usb2_file_path[MAX_FILE_PATH_LENGTH];
             sprintf(usb2_file_path, "%s%s", usb2->mount_path, file_path);
+
             file_info = get_info(usb2_file_path);
             file_content = read_file_to_string(usb2_file_path);
             printf("Trying to get info from USB2 ...\n");
