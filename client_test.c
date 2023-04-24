@@ -250,7 +250,7 @@ int main()
     {
         printf("Failed to create directories in USB\n");
     }
-    printf("Expect: directories folder4, folder5, folder6 are constructed\n");
+    printf("Expect: directories folder4, folder5, folder6 have already been constructed\n");
 
     // sychronize both USBs
     synchronize(&usb1, &usb2, bg_thread_args.unique_paths, bg_thread_args.unique_path_count);
